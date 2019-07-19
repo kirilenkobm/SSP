@@ -1,0 +1,3 @@
+LIBRARY   SSP_lib
+EXPORTS
+    solve_SSP   @1
