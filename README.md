@@ -10,7 +10,7 @@ On Linux/MacOS:
 git clone git@gitlab.com:kirilenkobm/ssp.git
 cd ssp
 make
-./SSP.py test_input/1.txt 2 9
+./SSP.py test_input/3.txt 2 9
 ```
 
 On windows:
