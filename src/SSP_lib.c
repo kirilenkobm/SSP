@@ -17,13 +17,14 @@ kirilenkobm@gmail.com
 uint32_t *accumulate_sum_s_z(uint32_t *func, uint32_t f_len)
 // create accumulate sum array
 // start with 0!
+// TODO: wrong!
 {
     uint32_t *res = (uint32_t*)malloc(sizeof(uint32_t) * (f_len + CHUNK));
     res[0] = 0;
     uint32_t val = 0;
     for (uint32_t i = 0; i < f_len; i++){
         res[i + 1] = val + func[i];
-        val = res[i];
+        val = res[i + 1];
     }
     return res;
 }
@@ -142,12 +143,18 @@ uint32_t *get_first_path(Elem_count *counter, uint32_t uniq_num, uint32_t* f_max
             if (current == 0){return res;}
             intermed_val = prev_sum + current;
             delta = (int64_t)target - (int64_t)intermed_val;
-            left_ = pos_left - (i + 1);
+            left_ = comb_size - (i + 1);
             sup = f_max_a[left_];
             inf = f_min_a[left_];
+            // printf("sup %d delta %lld inf %d\n", sup, delta, inf);
+            // printf("Trying current %d left_ %d\n", current, left_);
             // printf("i %d d %lld sup %d inf %d cur %d\n", i, delta, sup, inf, current);
             // printf("left = %d\n", left_);
-            if (delta > (int64_t)sup){
+            if (delta < 0){
+                current_index++;
+                current = counter[current_index].number;
+                continue;
+            } else if (delta > (int64_t)sup){
                 // how it works?
                 printf("Magic place\n");
                 break;
@@ -158,12 +165,17 @@ uint32_t *get_first_path(Elem_count *counter, uint32_t uniq_num, uint32_t* f_max
                 // printf("Switched cur to %d\n", current);
                 continue;
             }
+            assert(delta == sup || delta == inf);
+            // printf("AGAIN sup %d delta %lld inf %d\n", sup, delta, inf);
+            // printf("CURRENT %d\n", current);
             // intermediate sum is in between, fine
             passed = true;
             res[pos_used] = current;
+            path_count[current_index].times++;
             pos_used++;
         }
     }
+
     return res;
 }
 
@@ -187,6 +199,16 @@ uint32_t *solve_SSP(uint32_t *in_arr, uint32_t arr_size,
     // not get accumulated sums
     uint32_t *f_max_acc = accumulate_sum_s_z(f_max, arr_size);
     uint32_t *f_min_acc = accumulate_sum_s_z(f_min, arr_size);
+    printf("f min acc:\n");
+    for (uint32_t i = 0; i < 10; i++){
+        printf("%d ", f_min_acc[i]);
+    }
+    printf("\n");
+    printf("f min acc:\n");
+    for (uint32_t i = 0; i < 10; i++){
+        printf("%d ", f_min[i]);
+    }
+    printf("\n");
     // count elems | there must be a better solution
     Elem_count *elem_counted = count_elems(f_max, arr_size);
     uint32_t uniq_num = 0;
@@ -204,7 +226,14 @@ uint32_t *solve_SSP(uint32_t *in_arr, uint32_t arr_size,
     // if 0 in the array -> nothing found; negative result
     for (uint32_t s = 0; s < sub_size; s++){
         printf("%d\n", first_path[s]);
-        if (first_path[s] == 0){return answer;}
+        if (first_path[s] == 0){
+            free(f_max);
+            free(f_min);
+            free(first_path);
+            free(f_max_acc);
+            free(f_min_acc);
+            return answer;
+            }
     }
     // the first result is here, let's write it to answer
     printf("# got first result\n");
