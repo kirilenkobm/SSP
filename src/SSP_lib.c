@@ -5,7 +5,6 @@ kirilenkobm@gmail.com
 */
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -15,13 +14,15 @@ kirilenkobm@gmail.com
 #define CHUNK 5
 
 
-uint32_t *accumulate_sum(uint32_t *func, uint32_t f_len)
-// just create accumulated sum array
+uint32_t *accumulate_sum_s_z(uint32_t *func, uint32_t f_len)
+// create accumulate sum array
+// start with 0!
 {
     uint32_t *res = (uint32_t*)malloc(sizeof(uint32_t) * (f_len + CHUNK));
+    res[0] = 0;
     uint32_t val = 0;
     for (uint32_t i = 0; i < f_len; i++){
-        res[i] = val + func[i];
+        res[i + 1] = val + func[i];
         val = res[i];
     }
     return res;
@@ -32,7 +33,7 @@ Elem_count *count_elems(uint32_t *arr, uint32_t arr_size)
 // count each elem in the array
 {
     // it must be a better solution than allocate a ton of memory
-    // an then shrinking it down
+    // an then shrinking it down | but...
     uint32_t uniq_count = 0;
     uint32_t cur_val = arr[0];
     Elem_count *res = (Elem_count*)malloc(arr_size * sizeof(Elem_count));
@@ -84,11 +85,22 @@ uint32_t part_sum(uint32_t *arr,uint32_t n)
 }
 
 
-uint32_t check_current(uint32_t current, Elem_count *path_count, Elem_count *overall_count)
+uint32_t check_current(uint32_t current, uint32_t cur_index,
+                       Elem_count *path_count, Elem_count *overall_count)
 // check if current value still can be used, decrease it or return 0 otherwise
 // if all possible elements vere spent
 {
-
+    uint32_t used = path_count[cur_index].times;
+    uint32_t available = overall_count[cur_index].times;
+    assert(available >= used);
+    if (available == used)
+    {
+        // we cannot use this elem -> this is over
+        // if 0 -> all are over, so there is no way
+        return overall_count[cur_index + 1].number;
+    }
+    // we still have this number
+    return current;
 }
 
 
@@ -98,16 +110,59 @@ uint32_t *get_first_path(Elem_count *counter, uint32_t uniq_num, uint32_t* f_max
 {
     uint32_t *res = (uint32_t*)calloc(comb_size, sizeof(uint32_t));
     uint32_t current = counter[0].number;
+    uint32_t current_ = 0;  // I was too lazy for normal output
+    uint32_t intermed_val = 0;  // to keep intermediate sum
+    uint32_t current_index = 0;  // to get next elem quickly
+    int64_t delta = 0;  // between target and intermediate val
+    uint32_t left_ = 0;  // intermediate left number
     uint32_t pos_left = comb_size;
     uint32_t pos_used = 0;
     uint32_t prev_sum = 0;
+    uint32_t sup = 0;
+    uint32_t inf = 0;
     Elem_count *path_count = get_zero_path_count(counter, uniq_num);
     for (uint32_t i = 0; i < pos_left; i++)
     // add elems one-by-one
     {
         bool passed = false;
         prev_sum = part_sum(res, pos_used);
-        current = check_current(current, path_count, counter);
+        // printf("i %d prev sum %d\n", i, prev_sum);
+        current_ = check_current(current, current_index,
+                                 path_count, counter);
+        if (current != current_){
+            // change indexes
+            current = current_;
+            current_index++;
+        }
+        while (!passed)
+        // select the suitable number
+        {
+            // if no current value (== 0)
+            // then terminate execution
+            if (current == 0){return res;}
+            intermed_val = prev_sum + current;
+            delta = (int64_t)target - (int64_t)intermed_val;
+            left_ = pos_left - (i + 1);
+            sup = f_max_a[left_];
+            inf = f_min_a[left_];
+            // printf("i %d d %lld sup %d inf %d cur %d\n", i, delta, sup, inf, current);
+            // printf("left = %d\n", left_);
+            if (delta > (int64_t)sup){
+                // how it works?
+                printf("Magic place\n");
+                break;
+            } else if (delta < (int64_t)inf){
+                // get next size and repeat
+                current_index++;
+                current = counter[current_index].number;
+                // printf("Switched cur to %d\n", current);
+                continue;
+            }
+            // intermediate sum is in between, fine
+            passed = true;
+            res[pos_used] = current;
+            pos_used++;
+        }
     }
     return res;
 }
@@ -130,8 +185,8 @@ uint32_t *solve_SSP(uint32_t *in_arr, uint32_t arr_size,
     for (uint32_t i = 0, j = arr_size - 1; i < arr_size; i++, j--){
         f_max[j] = f_min[i];}
     // not get accumulated sums
-    uint32_t *f_max_acc = accumulate_sum(f_max, arr_size);
-    uint32_t *f_min_acc = accumulate_sum(f_min, arr_size);
+    uint32_t *f_max_acc = accumulate_sum_s_z(f_max, arr_size);
+    uint32_t *f_min_acc = accumulate_sum_s_z(f_min, arr_size);
     // count elems | there must be a better solution
     Elem_count *elem_counted = count_elems(f_max, arr_size);
     uint32_t uniq_num = 0;
@@ -146,6 +201,14 @@ uint32_t *solve_SSP(uint32_t *in_arr, uint32_t arr_size,
     // like in the python implementation
     uint32_t *first_path = get_first_path(elem_counted, uniq_num, f_max_acc,
                                           f_min_acc, req_sum, sub_size);
+    // if 0 in the array -> nothing found; negative result
+    for (uint32_t s = 0; s < sub_size; s++){
+        printf("%d\n", first_path[s]);
+        if (first_path[s] == 0){return answer;}
+    }
+    // the first result is here, let's write it to answer
+    printf("# got first result\n");
+    for (uint32_t s = 0; s < sub_size; s++){answer[s] = first_path[s];}
     // then modify it
 
     // don't forget to clean memory up
