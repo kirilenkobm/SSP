@@ -165,7 +165,6 @@ uint32_t *get_first_path(Elem_count *counter, uint32_t uniq_num, uint32_t* f_max
                 // printf("Switched cur to %d\n", current);
                 continue;
             }
-            assert(delta == sup || delta == inf);
             // printf("AGAIN sup %d delta %lld inf %d\n", sup, delta, inf);
             // printf("CURRENT %d\n", current);
             // intermediate sum is in between, fine
@@ -175,7 +174,10 @@ uint32_t *get_first_path(Elem_count *counter, uint32_t uniq_num, uint32_t* f_max
             pos_used++;
         }
     }
-
+    // just a check for correctness
+    uint32_t act_sum = part_sum(res, pos_used);
+    // maybe assert?
+    if (act_sum != target){res[0] = 0;}
     return res;
 }
 
@@ -185,11 +187,13 @@ uint32_t *solve_SSP(uint32_t *in_arr, uint32_t arr_size,
 // what we should call
 {
     // just write sub_size -by- sub_size
-    size_t ans_size = ALLOC_STEP * sub_size + CHUNK;
+    uint32_t ans_size = ALLOC_STEP * sub_size + CHUNK;
+    uint32_t ans_occupied = 0;
     uint32_t *answer = (uint32_t*)calloc(ans_size, sizeof(uint32_t));
     size_t f_max_min_size = sizeof(uint32_t) * (arr_size + CHUNK);
     uint32_t *f_max = (uint32_t*)malloc(f_max_min_size);
     uint32_t *f_min = (uint32_t*)malloc(f_max_min_size);
+
     // the numbers are actually pre-sorted
     // just for explicity
     for (uint32_t i = 0; i < arr_size; i++){f_min[i] = in_arr[i];}
@@ -199,16 +203,7 @@ uint32_t *solve_SSP(uint32_t *in_arr, uint32_t arr_size,
     // not get accumulated sums
     uint32_t *f_max_acc = accumulate_sum_s_z(f_max, arr_size);
     uint32_t *f_min_acc = accumulate_sum_s_z(f_min, arr_size);
-    printf("f min acc:\n");
-    for (uint32_t i = 0; i < 10; i++){
-        printf("%d ", f_min_acc[i]);
-    }
-    printf("\n");
-    printf("f min acc:\n");
-    for (uint32_t i = 0; i < 10; i++){
-        printf("%d ", f_min[i]);
-    }
-    printf("\n");
+
     // count elems | there must be a better solution
     Elem_count *elem_counted = count_elems(f_max, arr_size);
     uint32_t uniq_num = 0;
@@ -235,11 +230,14 @@ uint32_t *solve_SSP(uint32_t *in_arr, uint32_t arr_size,
             return answer;
             }
     }
+
     // the first result is here, let's write it to answer
     printf("# got first result\n");
     for (uint32_t s = 0; s < sub_size; s++){answer[s] = first_path[s];}
-    // then modify it
+    ans_occupied += sub_size;  // do not forget to reallocate if so
 
+    // then: extract other sequences
+    // TODO
     // don't forget to clean memory up
     free(f_max);
     free(f_min);
