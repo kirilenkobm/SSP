@@ -1,6 +1,6 @@
 # Subset Sum problem
 
-Incredibly fast solution
+Each problem requires a solution, and 
 
 ## Usage
 
@@ -28,7 +28,7 @@ Inputs may be generated with generate_input.py
 
 ## Explanation
 
-Some stuff here
+Actually I have no idea why it works
 
 ## Performance measurements
 

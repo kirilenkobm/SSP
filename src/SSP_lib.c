@@ -13,6 +13,13 @@ kirilenkobm@gmail.com
 #define ALLOC_STEP 10
 #define CHUNK 5
 
+// global
+uint32_t *f_max;
+uint32_t *f_min;
+uint32_t *f_max_acc;
+uint32_t *f_min_acc;
+uint32_t *first_path;
+
 
 uint32_t *accumulate_sum_s_z(uint32_t *func, uint32_t f_len)
 // create accumulate sum array
@@ -156,7 +163,6 @@ uint32_t *get_first_path(Elem_count *counter, uint32_t uniq_num, uint32_t* f_max
                 continue;
             } else if (delta > (int64_t)sup){
                 // how it works?
-                printf("Magic place\n");
                 break;
             } else if (delta < (int64_t)inf){
                 // get next size and repeat
@@ -181,9 +187,18 @@ uint32_t *get_first_path(Elem_count *counter, uint32_t uniq_num, uint32_t* f_max
     return res;
 }
 
+void _free_all()
+// free all allocated stuff
+{
+    free(f_max);
+    free(f_min);
+    free(first_path);
+    free(f_max_acc);
+    free(f_min_acc);
+}
 
-uint32_t *solve_SSP(uint32_t *in_arr, uint32_t arr_size,
-                    uint32_t sub_size, uint32_t req_sum)
+uint32_t *solve_SSP(uint32_t *in_arr, uint32_t arr_size, uint32_t sub_size,
+                    uint32_t req_sum, bool only)
 // what we should call
 {
     // just write sub_size -by- sub_size
@@ -191,8 +206,8 @@ uint32_t *solve_SSP(uint32_t *in_arr, uint32_t arr_size,
     uint32_t ans_occupied = 0;
     uint32_t *answer = (uint32_t*)calloc(ans_size, sizeof(uint32_t));
     size_t f_max_min_size = sizeof(uint32_t) * (arr_size + CHUNK);
-    uint32_t *f_max = (uint32_t*)malloc(f_max_min_size);
-    uint32_t *f_min = (uint32_t*)malloc(f_max_min_size);
+    f_max = (uint32_t*)malloc(f_max_min_size);
+    f_min = (uint32_t*)malloc(f_max_min_size);
 
     // the numbers are actually pre-sorted
     // just for explicity
@@ -201,8 +216,8 @@ uint32_t *solve_SSP(uint32_t *in_arr, uint32_t arr_size,
     for (uint32_t i = 0, j = arr_size - 1; i < arr_size; i++, j--){
         f_max[j] = f_min[i];}
     // not get accumulated sums
-    uint32_t *f_max_acc = accumulate_sum_s_z(f_max, arr_size);
-    uint32_t *f_min_acc = accumulate_sum_s_z(f_min, arr_size);
+    f_max_acc = accumulate_sum_s_z(f_max, arr_size);
+    f_min_acc = accumulate_sum_s_z(f_min, arr_size);
 
     // count elems | there must be a better solution
     Elem_count *elem_counted = count_elems(f_max, arr_size);
@@ -212,37 +227,25 @@ uint32_t *solve_SSP(uint32_t *in_arr, uint32_t arr_size,
         if (elem_counted[i].number == 0){break;}
         uniq_num++;
     }
-    printf("# there are %d uniq elems\n", uniq_num);
+    // printf("# there are %d uniq elems\n", uniq_num);    
     // find the first maximal path
     // actually they might be merged into one func
     // like in the python implementation
-    uint32_t *first_path = get_first_path(elem_counted, uniq_num, f_max_acc,
-                                          f_min_acc, req_sum, sub_size);
+    first_path = get_first_path(elem_counted, uniq_num, f_max_acc,
+                                f_min_acc, req_sum, sub_size);
     // if 0 in the array -> nothing found; negative result
     for (uint32_t s = 0; s < sub_size; s++){
-        printf("%d\n", first_path[s]);
-        if (first_path[s] == 0){
-            free(f_max);
-            free(f_min);
-            free(first_path);
-            free(f_max_acc);
-            free(f_min_acc);
-            return answer;
-            }
-    }
-
+        if (first_path[s] == 0){_free_all(); return answer;}}
+    // we wanted to find an only one answer, so return it
     // the first result is here, let's write it to answer
-    printf("# got first result\n");
+    // printf("# got first result\n");
     for (uint32_t s = 0; s < sub_size; s++){answer[s] = first_path[s];}
+    if (only){_free_all(); return answer;}
     ans_occupied += sub_size;  // do not forget to reallocate if so
 
     // then: extract other sequences
     // TODO
     // don't forget to clean memory up
-    free(f_max);
-    free(f_min);
-    free(first_path);
-    free(f_max_acc);
-    free(f_min_acc);
+    _free_all();
     return answer;
 }
