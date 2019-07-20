@@ -77,7 +77,7 @@ def mut_base(arr):
         pluses_corr.append(last_elem)
         break
     # and add these pluses to a random subset
-    ind_to_plus = np.random.choice(minused_arr, len(pluses_corr), replace=False)
+    ind_to_plus = np.random.choice(range(arr_len), len(pluses_corr), replace=False)
     for i, ind in enumerate(ind_to_plus):
         minused_arr[ind] += pluses_corr[i]
     return minused_arr

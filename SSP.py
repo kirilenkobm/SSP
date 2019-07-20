@@ -119,7 +119,8 @@ def main(input_file, subset_size_arg, requested_sum, only):
         sys.exit("Subset size cannot be >= the set size")
     # then find shared lib
     lib_ext = "so" if platform.system != "Windows" else "dll"
-    lib_path = os.path.join("bin", "SSP_lib.{}".format(lib_ext))
+    lib_path = os.path.join(os.path.dirname(__file__), "bin",
+                            "SSP_lib.{}".format(lib_ext))
     if not os.path.isfile(lib_path):
         sys.exit("Please call make or win_make.bat first")
 
