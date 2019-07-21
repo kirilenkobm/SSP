@@ -188,6 +188,7 @@ uint32_t *get_first_path(Elem_count *counter, uint32_t uniq_num, uint32_t* f_max
     return res;
 }
 
+
 void _free_all()
 // free all allocated stuff
 {
@@ -197,6 +198,7 @@ void _free_all()
     free(f_max_acc);
     free(f_min_acc);
 }
+
 
 uint32_t *solve_SSP(uint32_t *in_arr, uint32_t arr_size, uint32_t sub_size, uint32_t req_sum)
 // what we should call

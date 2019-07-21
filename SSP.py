@@ -89,12 +89,12 @@ def get_subset_sizes(in_arr, req_sum):
             # the problem is actually solved
             # better to wrap in a class;
             # TODO: make it fancier
-            print("Sum lies on f_min, the answer is:\n{}" \
-                  "".format(f_min[:sub_size]))
+            print("# Sum lies on f_min, the answer is:\n{}" \
+                  "".format(f_min[:sub_size + 1]))
             exit()
         elif req_sum == sup:
-            print("Answer lies of f_max, the aswer is:\n{}" \
-                  "".format(f_max[:sub_size]))
+            print("# Answer lies of f_max, the aswer is:\n{}" \
+                  "".format(f_max[:sub_size + 1]))
             exit()
         elif inf < req_sum < sup:
             subset_sizes.append(sub_size + 1)
@@ -105,7 +105,7 @@ def _make_single_size(req, available):
     """Check if requested elem len is possible."""
     if req < available[0] or req > available[-1]:
         print("# Impossible to find combination of length {}".format(req))
-        print("Please use one of these for this input:\n{}".format(str(available)))
+        print("# Please use one of these for this input:\n{}".format(str(available)))
         sys.exit("Abort")
     return [req]
 
