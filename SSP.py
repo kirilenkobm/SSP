@@ -38,7 +38,7 @@ def parse_args():
     return args
 
 
-def make_input_arr(in_file):
+def make_input_arr(in_file, req_sum):
     """Read input, check and convert to a numpy array."""
     in_is_stdin_stream = in_file == "stdin"
     f = open(in_file) if not in_is_stdin_stream else sys.stdin
@@ -55,8 +55,11 @@ def make_input_arr(in_file):
         sys.exit("Sorry, but input nmber size is limited"
                  " to uint32_t max size")
     # ACTUALLY A PROBLEM
-    if sum(numbers) > UINT32_SIZE:
+    tot_sum = sum(numbers)
+    if tot_sum > UINT32_SIZE:
         sys.exit("Overall array sum is too big, it will overflow")
+    elif req_sum > tot_sum:
+        sys.exit("Requested sum > overall sum of the array, abort")
     # ok, let's return this
     return numbers
 
@@ -151,7 +154,7 @@ def main(input_file, requested_sum):
     """Entry point."""
     args = parse_args()
     # read user input
-    in_arr = make_input_arr(input_file)
+    in_arr = make_input_arr(input_file, args.requested_sum)
     in_arr_len = len(in_arr)
     # then find shared lib
     lib_ext = "so" if platform.system != "Windows" else "dll"
