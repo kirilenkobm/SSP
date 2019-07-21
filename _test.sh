@@ -14,8 +14,16 @@ TEST_2=test_input/2.txt
 TEST_3=test_input/3.txt
 
 SSP=./SSP.py
-echo "TEST_1 4 10 without -o"
-$SSP $TEST_1 4 10
+echo "TEST_1 10"
+$SSP $TEST_1 10
+if [[ $? -ne 0 ]]; then
+    echo "Test1 failed"
+else 
+    echo "Test1 successful"
+fi
+
+echo "TEST_1 10 with -s == 4"
+$SSP $TEST_1 10 -s 4
 if [[ $? -ne 0 ]]; then
     echo "Test1 failed"
 else 

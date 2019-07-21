@@ -5,3 +5,4 @@
 __pycache__/
 *.d
 __py_implementation.py
+.ipynb_checkpoints/
