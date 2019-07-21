@@ -16,6 +16,7 @@ __version__ = 0.1
 # actually, it will overflow on values like this
 # arr sum should be limited to uint32_t max
 UINT32_SIZE = 4294967295
+# TODO: re-write in C, completely
 
 
 def parse_args():
@@ -128,20 +129,23 @@ def call_lib(lib, subset_size, requested_sum, in_arr, in_arr_len, _in_file):
     if result[0] == 0:
         # if starts with 0 -> nothing found at all
         # TODO: should be printer in the versbose mode only:
-        print("# No results for:\n# IN_FILE: {}; REQ_SUM: {}; SUBSET_SIZE: {}".format(_in_file,
-                                                                                     requested_sum,
-                                                                                     subset_size))
+        print("# No results for:\n# IN_FILE: {}; REQ_SUM: "\
+              "{}; SUBSET_SIZE: {}".format(_in_file,
+                                           requested_sum,
+                                           subset_size))
         del lib  # no need to stop iter:
         return False
     # there are our results
-    print("# The result(s) is/are:")
     answer = [result[i] for i in range(subset_size)]
+    if sum(answer) != requested_sum:
+        return False
+    print("# The result(s) is/are:")
     print(answer)
     del lib
     # in case if we wanted one combination only,
     # it will halt the program
     return True
-    
+
 
 def main(input_file, requested_sum):
     """Entry point."""
