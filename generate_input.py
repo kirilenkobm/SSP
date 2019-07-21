@@ -19,8 +19,6 @@ N_max = 1000000
 # number borders
 I_min = 1
 I_max = 10000
-# array forming
-STD_SCALE = 100
 
 
 def parse_args():
@@ -29,6 +27,7 @@ def parse_args():
     app.add_argument("N", type=int, help="Input sample size")
     app.add_argument("n", type=int, help="Take n first elems to get sum "
                                          "that really exists")
+    app.add_argument("std_scale", type=int)
     app.add_argument("samples", type=int, help="Num of samples")
     app.add_argument("name_templ", help="Template for output filename")
     args = app.parse_args()
@@ -37,13 +36,15 @@ def parse_args():
     elif args.n < 2 or args.n >= args.N:
         sys.exit("Error: n (lowercase) must be in "
                  "[{} {}]".format(2, args.N - 1))
+    elif args.std_scale < 1:
+        sys.exit("std scale expected to be >= 1")
     return args
 
 def main():
     """Entry point."""
     args = parse_args()
     for s in range(args.samples):
-        rnd_sample = np.random.normal(scale=STD_SCALE, size=args.N)
+        rnd_sample = np.random.normal(scale=args.std_scale, size=args.N)
         rnd_sample_int = [int(x) for x in abs(np.round(rnd_sample))]
         sum_forms = sorted(rnd_sample_int[:args.n], reverse=True)
         ans_sum = sum(sum_forms)

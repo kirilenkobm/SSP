@@ -167,7 +167,7 @@ def main(input_file, requested_sum):
                               ctypes.c_uint32,
                               ctypes.c_uint32]
     lib.solve_SSP.restype = ctypes.POINTER(ctypes.c_uint32)
-    t0 = dt.now()
+    # t0 = dt.now()
     f_calls = 0
     if args.subset_size:
         subset_sizes = _make_single_size(args.subset_size, subset_sizes)
@@ -177,8 +177,8 @@ def main(input_file, requested_sum):
         if stop_iter:
             # we found what we've been looking for
             break
-    elapsed = dt.now() - t0
-    print("# Time spent within C libraries: {}".format(elapsed))
+    # elapsed = dt.now() - t0
+
     print("# Func calls: {}".format(f_calls))
 
 if __name__ == "__main__":
