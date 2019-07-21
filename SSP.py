@@ -128,7 +128,7 @@ def call_lib(lib, subset_size, requested_sum, in_arr, in_arr_len, _in_file):
     if result[0] == 0:
         # if starts with 0 -> nothing found at all
         # TODO: should be printer in the versbose mode only:
-        print("# No results for:\n#IN_FILE: {}; REQ_SUM: {}; SUBSET_SIZE: {}".format(_in_file,
+        print("# No results for:\n# IN_FILE: {}; REQ_SUM: {}; SUBSET_SIZE: {}".format(_in_file,
                                                                                      requested_sum,
                                                                                      subset_size))
         del lib  # no need to stop iter:
