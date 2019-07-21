@@ -18,7 +18,7 @@ N_min = 1
 N_max = 1000000
 # number borders
 I_min = 1
-I_max = 10000
+I_max = 100000
 
 
 def parse_args():
@@ -45,7 +45,7 @@ def main():
     args = parse_args()
     for s in range(args.samples):
         rnd_sample = np.random.normal(scale=args.std_scale, size=args.N)
-        rnd_sample_int = [int(x) for x in abs(np.round(rnd_sample))]
+        rnd_sample_int = [int(x) + 1 for x in abs(np.round(rnd_sample))]
         sum_forms = sorted(rnd_sample_int[:args.n], reverse=True)
         ans_sum = sum(sum_forms)
         filename = "{}_{}".format(s, args.name_templ)
