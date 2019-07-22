@@ -23,10 +23,10 @@ uint32_t *answer;
 bool v = false;
 
 
-void verbose(const char * restrict format, ...) {
-    if( !v )
-        return;
-
+void verbose(const char * restrict format, ...)
+// show verbose message if v is activated
+{
+    if(!v){return;}
     va_list args;
     va_start(args, format);
     vprintf(format, args);
@@ -37,8 +37,6 @@ void verbose(const char * restrict format, ...) {
 
 uint32_t *accumulate_sum_s_z(uint32_t *func, uint32_t f_len)
 // create accumulate sum array
-// start with 0!
-// TODO: wrong!
 {
     uint32_t *res = (uint32_t*)malloc(sizeof(uint32_t) * (f_len + CHUNK));
     res[0] = 0;
@@ -53,9 +51,9 @@ uint32_t *accumulate_sum_s_z(uint32_t *func, uint32_t f_len)
 
 Elem_count *count_elems(uint32_t *arr, uint32_t arr_size)
 // count each elem in the array
+// it must be a better solution than allocate a ton of memory
+// an then shrinking it down | but...
 {
-    // it must be a better solution than allocate a ton of memory
-    // an then shrinking it down | but...
     uint32_t uniq_count = 0;
     uint32_t cur_val = arr[0];
     Elem_count *res = (Elem_count*)malloc(arr_size * sizeof(Elem_count));
@@ -257,6 +255,7 @@ uint32_t *solve_SSP(uint32_t *in_arr, uint32_t arr_size, uint32_t sub_size,
         // if we are here -> result was found
         break;
     }
+
     // we wanted to find an only one answer, so return it
     _free_all();
     return answer;
