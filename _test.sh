@@ -14,18 +14,20 @@ TEST_2=test_input/2.txt
 TEST_3=test_input/3.txt
 
 SSP=./SSP.py
-echo "TEST_1 10"
+echo "### TEST_1 10"
+echo "### Must return [7, 3]"
 $SSP $TEST_1 10
 if [[ $? -ne 0 ]]; then
-    echo "Test1 failed"
+    echo "Test 1 failed"
 else 
-    echo "Test1 successful"
+    echo "Test 1 successful"
 fi
 
-echo "TEST_1 10 with -s == 4"
+echo "### TEST_2 10 with -s == 4"
+echo "### Must return [5, 3, 1, 1'"
 $SSP $TEST_1 10 -s 4
 if [[ $? -ne 0 ]]; then
-    echo "Test1 failed"
+    echo "Test 2 failed"
 else 
-    echo "Test1 successful"
+    echo "Test 2 successful"
 fi
