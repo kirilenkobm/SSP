@@ -124,7 +124,8 @@ class SSP:
         """Check if requested elem len is possible."""
         if req < available[0] or req > available[-1]:
             print("# Impossible to find combination of length {}".format(req))
-            print("# Please use one of these for this input:\n{}".format(str(available)))
+            print("# Please use one of these for this input:")
+            print(str(available))
             sys.exit("Abort")
         return [req]
 
