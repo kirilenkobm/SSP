@@ -9,6 +9,7 @@ kirilenkobm@gmail.com
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include "SSP_lib.h"
 #define ALLOC_STEP 10
 #define CHUNK 5
@@ -19,6 +20,19 @@ uint32_t *f_min;
 uint32_t *f_max_acc;
 uint32_t *f_min_acc;
 uint32_t *answer;
+bool v = false;
+
+
+void verbose(const char * restrict format, ...) {
+    if( !v )
+        return;
+
+    va_list args;
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+    return;
+}
 
 
 uint32_t *accumulate_sum_s_z(uint32_t *func, uint32_t f_len)
@@ -119,6 +133,7 @@ uint32_t *get_first_path(Elem_count *counter, uint32_t uniq_num, uint32_t* f_max
 {
     uint32_t *res = (uint32_t*)calloc(comb_size, sizeof(uint32_t));
     uint32_t current = counter[current_index].number;
+    verbose("Trying to find a path of size %d\n", comb_size);
     uint32_t current_ = 0;  // I was too lazy for normal output
     uint32_t intermed_val = 0;  // to keep intermediate sum
     // uint32_t current_index = 0;  // to get next elem quickly
@@ -196,16 +211,15 @@ void _free_all()
 }
 
 
-uint32_t *solve_SSP(uint32_t *in_arr, uint32_t arr_size, uint32_t sub_size, uint32_t req_sum)
+uint32_t *solve_SSP(uint32_t *in_arr, uint32_t arr_size, uint32_t sub_size,
+                    uint32_t req_sum, bool _v)
 // what we should call
 {
     // just write sub_size -by- sub_size
-    // uint32_t ans_size = ALLOC_STEP * sub_size + CHUNK;
-    // uint32_t ans_occupied = 0;
-    // uint32_t *answer = (uint32_t*)calloc(sub_size + CHUNK, sizeof(uint32_t));
     size_t f_max_min_size = sizeof(uint32_t) * (arr_size + CHUNK);
     f_max = (uint32_t*)malloc(f_max_min_size);
     f_min = (uint32_t*)malloc(f_max_min_size);
+    v = _v;  // maybe there's a better solution
 
     // the numbers are actually pre-sorted
     // just for explicity
@@ -225,11 +239,13 @@ uint32_t *solve_SSP(uint32_t *in_arr, uint32_t arr_size, uint32_t sub_size, uint
         if (elem_counted[i].number == 0){break;}
         uniq_num++;
     }
+    verbose("# Found %d unique elems\n", uniq_num);
 
     for (uint32_t c_ind = 0; c_ind < uniq_num; c_ind++)
     // try different starting points
     {
         bool success = true;
+        verbose("# Trying c_ind %d\n", c_ind);
         answer = get_first_path(elem_counted, uniq_num, f_max_acc,
                                     f_min_acc, req_sum, sub_size, c_ind);
         // if 0 in the array -> nothing found; negative result
@@ -237,17 +253,11 @@ uint32_t *solve_SSP(uint32_t *in_arr, uint32_t arr_size, uint32_t sub_size, uint
            if (answer[s] == 0){success = false; break;}}
         // continue if there is nothing
         if (!success){continue;}
+        printf("# Found result for c_ind %d\n", c_ind);
         // if we are here -> result was found
         break;
     }
     // we wanted to find an only one answer, so return it
-    // extensions will be later
-
-    for (uint32_t s = 0; s < sub_size; s++){
-           if (answer[s] == 0){
-               answer[0] = 0;
-               break;
-            }}
     _free_all();
     return answer;
 }

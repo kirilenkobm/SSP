@@ -104,7 +104,8 @@ class SSP:
         self.lib.solve_SSP.argtypes = [ctypes.POINTER(ctypes.c_uint32),
                                        ctypes.c_uint32,
                                        ctypes.c_uint32,
-                                       ctypes.c_uint32]
+                                       ctypes.c_uint32,
+                                       ctypes.c_bool]
         self.lib.solve_SSP.restype = ctypes.POINTER(ctypes.c_uint32)
 
     @staticmethod
@@ -135,18 +136,21 @@ class SSP:
         c_arr_size = ctypes.c_uint32(self.in_arr_len)
         c_sub_size = ctypes.c_uint32(subset_size)
         c_req_sum = ctypes.c_uint32(self.requested_sum)
+        c_v = ctypes.c_bool(self._verbose)
         # get and parse the result
         result = self.lib.solve_SSP(c_arr,
                                     c_arr_size,
                                     c_sub_size,
-                                    c_req_sum)
+                                    c_req_sum,
+                                    c_v)
         _answer = [result[i] for i in range(subset_size)]
         # if starts with 0 -> nothing found at all
         if _answer[0] == 0 or sum(_answer) != self.requested_sum:
-            self.__v("# No results for:\n# IN_FILE: {}; REQ_SUM: "\
-                    "{}; SUBSET_SIZE: {}".format(self.in_file,
-                                                 self.requested_sum,
-                                                 subset_size))
+            msg_ = "No results for:\n IN FILE: {} REQ_SUM: {}" \
+                  " SUBSET_SIZE: {}".format(self.in_file,
+                                            self.requested_sum,
+                                            subset_size)
+            self.__v(msg_)
             del self.lib  # no need to stop iter:
             self.__configure_lib()
             return False
