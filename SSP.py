@@ -26,11 +26,16 @@ class SSP:
         self.requested_sum = req_sum
         self._v = v
         self.subset_size = subset_size
+        self.answer = None
         self.__make_input_arr()
         self.__get_subset_sizes()
-        self.__make_input_arr()
         self.__configure_lib()
     
+    @staticmethod
+    def __do_nothing(*args):
+        """Just do nothing."""
+        pass
+
     def __make_input_arr(self):
         """Read input and check it."""
         in_is_stdin_stream = self.in_file == "stdin"
@@ -55,7 +60,32 @@ class SSP:
             sys.exit("Requested sum > overall sum of the array, abort")
         self.in_arr = numbers
         self.in_arr_len = len(numbers)
-    
+
+    def __get_subset_sizes(self):
+        """Get subset sizes to check."""
+        f_min = self.in_arr.copy()
+        f_max = self.in_arr[::-1]
+        f_min_acc = self.accumulate_sum(f_min)
+        f_max_acc = self.accumulate_sum(f_max)
+        # find the first elem what's bigger
+        subset_sizes = []
+        # 1 is deleted, should be specially noted
+        for sub_size in range(1, len(f_max_acc)):
+            inf = f_min_acc[sub_size]
+            sup = f_max_acc[sub_size]
+            if self.requested_sum == inf:
+                # the problem is actually solved
+                # better to wrap in a class;
+                # TODO: make it fancier
+                self.answer = f_min[:sub_size + 1]
+                self.__configure_lib = self.__do_nothing
+            elif self.requested_sum == sup:
+                self.answer = f_max[:sub_size + 1]
+                self.__configure_lib = self.__do_nothing
+            elif inf < self.requested_sum < sup:
+                subset_sizes.append(sub_size + 1)
+        self.subset_sizes = subset_sizes
+
     def __configure_lib(self):
         """Find the lib and configure it."""
         lib_ext = "so" if platform.system != "Windows" else "dll"
@@ -81,34 +111,6 @@ class SSP:
         for i in range(1, len(lst)):
             accumulated_sum.append(accumulated_sum[i - 1] + lst[i])
         return accumulated_sum
-
-    def __get_subset_sizes(self):
-        """Get subset sizes to check."""
-        # TODO: maybe also transfer to C func?
-        f_min = self.in_arr.copy()
-        f_max = self.in_arr[::-1]
-        f_min_acc = self.accumulate_sum(f_min)
-        f_max_acc = self.accumulate_sum(f_max)
-        # find the first elem what's bigger
-        subset_sizes = []
-        # 1 is deleted, should be specially noted
-        for sub_size in range(1, len(f_max_acc)):
-            inf = f_min_acc[sub_size]
-            sup = f_max_acc[sub_size]
-            if self.requested_sum == inf:
-                # the problem is actually solved
-                # better to wrap in a class;
-                # TODO: make it fancier
-                print("# Sum lies on f_min, the answer is:\n{}" \
-                    "".format(f_min[:sub_size + 1]))
-                exit()
-            elif self.requested_sum == sup:
-                print("# Answer lies of f_max, the aswer is:\n{}" \
-                    "".format(f_max[:sub_size + 1]))
-                exit()
-            elif inf < self.requested_sum < sup:
-                subset_sizes.append(sub_size + 1)
-        self.subset_sizes = subset_sizes
 
     @staticmethod
     def __make_single_size(req, available):
@@ -146,18 +148,18 @@ class SSP:
             self.__configure_lib()
             return False
         # there are our results
-        answer = [result[i] for i in range(subset_size)]
-        if sum(answer) != self.requested_sum:
+        _answer = [result[i] for i in range(subset_size)]
+        if sum(_answer) != self.requested_sum:
             return False
-        print("# The result(s) is/are:")
-        print(answer)
         del self.lib
-        # in case if we wanted one combination only,
-        # it will halt the program
-        return True
+        self.answer = _answer
+        return True  # signal to stop
 
     def solve_ssp(self):
         """Get answer."""
+        if self.answer is not None:
+            # already known
+            return self.answer
         f_calls = 0
         if self.subset_size != 0:
             self.subset_sizes = self.__make_single_size(self.subset_size, self.subset_sizes)
@@ -167,8 +169,7 @@ class SSP:
             if stop_iter:
                 # we found what we've been looking for
                 break
-        # elapsed = dt.now() - t0
-        print("# Func calls: {}".format(f_calls))
+        return self.answer
 
 def parse_args():
     """Parse and check args."""
@@ -194,9 +195,9 @@ def parse_args():
 def main(input_file, requested_sum, subset_size, v):
     """Entry point."""
     ssp = SSP(input_file, requested_sum, subset_size, v)
-    # TODO: better --> return answer
-    # make self.answer variable
-    ssp.solve_ssp()
+    answer = ssp.solve_ssp()
+    print("The answer is:\n{}".format(str(answer)))
+    
 
 
 if __name__ == "__main__":

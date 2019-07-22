@@ -24,7 +24,7 @@ else
 fi
 
 echo "### TEST_2 10 with -s == 4"
-echo "### Must return [5, 3, 1, 1'"
+echo "### Must return [5, 3, 1, 1]"
 $SSP $TEST_1 10 -s 4
 if [[ $? -ne 0 ]]; then
     echo "Test 2 failed"
