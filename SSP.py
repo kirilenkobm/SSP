@@ -24,7 +24,7 @@ class SSP:
         """Initiate the class."""
         self.in_file = in_file
         self.requested_sum = req_sum
-        self._v = v
+        self._verbose = v
         self.subset_size = subset_size
         self.answer = None
         self.__make_input_arr()
@@ -35,6 +35,10 @@ class SSP:
     def __do_nothing(*args):
         """Just do nothing."""
         pass
+
+    def __v(self, msg):
+        """Print a verbose message."""
+        sys.stderr.write(msg + "\n") if self._verbose else None
 
     def __make_input_arr(self):
         """Read input and check it."""
@@ -60,6 +64,7 @@ class SSP:
             sys.exit("Requested sum > overall sum of the array, abort")
         self.in_arr = numbers
         self.in_arr_len = len(numbers)
+        self.__v("# Input array of size {}".format(self.in_arr_len))
 
     def __get_subset_sizes(self):
         """Get subset sizes to check."""
@@ -77,14 +82,15 @@ class SSP:
                 # the problem is actually solved
                 # better to wrap in a class;
                 # TODO: make it fancier
-                self.answer = f_min[:sub_size + 1]
+                self.answer = f_min[:sub_size + 1][::-1]
                 self.__configure_lib = self.__do_nothing
             elif self.requested_sum == sup:
-                self.answer = f_max[:sub_size + 1]
+                self.answer = f_max[:sub_size + 1][::-1]
                 self.__configure_lib = self.__do_nothing
             elif inf < self.requested_sum < sup:
                 subset_sizes.append(sub_size + 1)
         self.subset_sizes = subset_sizes
+        self.__v("# Will try {} subset sizes".format(len(subset_sizes)))
 
     def __configure_lib(self):
         """Find the lib and configure it."""
@@ -123,34 +129,28 @@ class SSP:
 
     def __call_lib(self, subset_size):
         """Call lib with the parameters given."""
+        self.__v("# Trying subset size: {}".format(subset_size))
         c_arr = (ctypes.c_uint32 * (self.in_arr_len + 1))()
         c_arr[:-1] = self.in_arr
         c_arr_size = ctypes.c_uint32(self.in_arr_len)
         c_sub_size = ctypes.c_uint32(subset_size)
         c_req_sum = ctypes.c_uint32(self.requested_sum)
         # get and parse the result
-        # TODO: verbose messages in c param
-        # t0 = dt.now()
         result = self.lib.solve_SSP(c_arr,
                                     c_arr_size,
                                     c_sub_size,
                                     c_req_sum)
-        # sys.stderr.write("Time spent (within shared lib): {}\n"
-        #                  "".format(dt.now() - t0))
-        if result[0] == 0:
-            # if starts with 0 -> nothing found at all
-            # TODO: should be printer in the versbose mode only:
-            print("# No results for:\n# IN_FILE: {}; REQ_SUM: "\
-                "{}; SUBSET_SIZE: {}".format(self.in_file,
-                                            self.requested_sum,
-                                            subset_size))
+        _answer = [result[i] for i in range(subset_size)]
+        # if starts with 0 -> nothing found at all
+        if _answer[0] == 0 or sum(_answer) != self.requested_sum:
+            self.__v("# No results for:\n# IN_FILE: {}; REQ_SUM: "\
+                    "{}; SUBSET_SIZE: {}".format(self.in_file,
+                                                 self.requested_sum,
+                                                 subset_size))
             del self.lib  # no need to stop iter:
             self.__configure_lib()
             return False
-        # there are our results
-        _answer = [result[i] for i in range(subset_size)]
-        if sum(_answer) != self.requested_sum:
-            return False
+        self.__v("# Found result at subset size {}".format(subset_size))
         del self.lib
         self.answer = _answer
         return True  # signal to stop
@@ -162,13 +162,15 @@ class SSP:
             return self.answer
         f_calls = 0
         if self.subset_size != 0:
-            self.subset_sizes = self.__make_single_size(self.subset_size, self.subset_sizes)
+            self.__v("# One subset size was specified: {}".format(args.subset_size))
+            self.subset_sizes = self.__make_single_size(self.subset_size,
+                                                        self.subset_sizes)
         for subset_size in self.subset_sizes:
             stop_iter = self.__call_lib(subset_size)
             f_calls += 1
-            if stop_iter:
-                # we found what we've been looking for
+            if stop_iter:  # stop, we found what we need
                 break
+        self.__v("# Shared lib called {} times".format(f_calls))
         return self.answer
 
 def parse_args():
@@ -176,13 +178,11 @@ def parse_args():
     app = argparse.ArgumentParser()
     app.add_argument("input", help="Text file containing input numbers, or stdin stream, "
                                     "just write stdin for that")
-    # actually, 0 - not implemented yet!
     app.add_argument("requested_sum", type=int, help="Sum requested")
     app.add_argument("--subset_size", "-s", type=int, default=0,
                      help="Specify particular size of subset, look only for this")
     app.add_argument("--verbose", "-v", action="store_true", dest="verbose",
                      help="Shpw verbose messages.")
-    # app.add_argument("--verbose", "-v", help="Show verbose messages")
     if len(sys.argv) < 3:
         app.print_help()
         sys.exit()
@@ -198,7 +198,6 @@ def main(input_file, requested_sum, subset_size, v):
     answer = ssp.solve_ssp()
     print("The answer is:\n{}".format(str(answer)))
     
-
 
 if __name__ == "__main__":
     args = parse_args()

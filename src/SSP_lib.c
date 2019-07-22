@@ -18,7 +18,7 @@ uint32_t *f_max;
 uint32_t *f_min;
 uint32_t *f_max_acc;
 uint32_t *f_min_acc;
-uint32_t *first_path;
+uint32_t *answer;
 
 
 uint32_t *accumulate_sum_s_z(uint32_t *func, uint32_t f_len)
@@ -154,10 +154,7 @@ uint32_t *get_first_path(Elem_count *counter, uint32_t uniq_num, uint32_t* f_max
             left_ = comb_size - (i + 1);
             sup = f_max_a[left_];
             inf = f_min_a[left_];
-            // printf("sup %d delta %lld inf %d\n", sup, delta, inf);
-            // printf("Trying current %d left_ %d\n", current, left_);
-            // printf("i %d d %lld sup %d inf %d cur %d\n", i, delta, sup, inf, current);
-            // printf("left = %d\n", left_);
+
             if (delta < 0){
                 current_index++;
                 current = counter[current_index].number;
@@ -194,7 +191,6 @@ void _free_all()
 {
     free(f_max);
     free(f_min);
-    free(first_path);
     free(f_max_acc);
     free(f_min_acc);
 }
@@ -206,7 +202,7 @@ uint32_t *solve_SSP(uint32_t *in_arr, uint32_t arr_size, uint32_t sub_size, uint
     // just write sub_size -by- sub_size
     // uint32_t ans_size = ALLOC_STEP * sub_size + CHUNK;
     // uint32_t ans_occupied = 0;
-    uint32_t *answer = (uint32_t*)calloc(sub_size + CHUNK, sizeof(uint32_t));
+    // uint32_t *answer = (uint32_t*)calloc(sub_size + CHUNK, sizeof(uint32_t));
     size_t f_max_min_size = sizeof(uint32_t) * (arr_size + CHUNK);
     f_max = (uint32_t*)malloc(f_max_min_size);
     f_min = (uint32_t*)malloc(f_max_min_size);
@@ -229,31 +225,29 @@ uint32_t *solve_SSP(uint32_t *in_arr, uint32_t arr_size, uint32_t sub_size, uint
         if (elem_counted[i].number == 0){break;}
         uniq_num++;
     }
-    // printf("# there are %d uniq elems\n", uniq_num);    
-    // find the first maximal path
-    // actually they might be merged into one func
-    // like in the python implementation
+
     for (uint32_t c_ind = 0; c_ind < uniq_num; c_ind++)
     // try different starting points
     {
         bool success = true;
-        first_path = get_first_path(elem_counted, uniq_num, f_max_acc,
+        answer = get_first_path(elem_counted, uniq_num, f_max_acc,
                                     f_min_acc, req_sum, sub_size, c_ind);
         // if 0 in the array -> nothing found; negative result
         for (uint32_t s = 0; s < sub_size; s++){
-           if (first_path[s] == 0){success = false; break;}}
-        // if we are here -> result was found
+           if (answer[s] == 0){success = false; break;}}
+        // continue if there is nothing
         if (!success){continue;}
+        // if we are here -> result was found
         break;
     }
     // we wanted to find an only one answer, so return it
     // extensions will be later
+
     for (uint32_t s = 0; s < sub_size; s++){
-           if (first_path[s] == 0){
-               first_path[0] = 0;
+           if (answer[s] == 0){
+               answer[0] = 0;
                break;
             }}
-    for (uint32_t s = 0; s < sub_size; s++){answer[s] = first_path[s];}
     _free_all();
     return answer;
 }
