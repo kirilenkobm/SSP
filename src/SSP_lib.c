@@ -95,7 +95,7 @@ Elem_count *get_zero_path_count(Elem_count *all_available, uint32_t all_size)
 }
 
 
-uint32_t part_sum(uint32_t *arr,uint32_t n)
+uint32_t part_sum(uint32_t *arr, uint32_t n)
 // sum first n elems of array
 {
     if (n == 0){return 0;}
@@ -126,15 +126,13 @@ uint32_t check_current(uint32_t current, uint32_t cur_index,
 
 uint32_t *get_first_path(Elem_count *counter, uint32_t uniq_num, uint32_t* f_max_a,
                          uint32_t *f_min_a, uint32_t target, uint32_t comb_size,
-                         uint32_t current_index)
-// get the first, base combination
+                         uint32_t current_index, bool first)
 {
     uint32_t *res = (uint32_t*)calloc(comb_size, sizeof(uint32_t));
     uint32_t current = counter[current_index].number;
     verbose("Trying to find a path of size %d\n", comb_size);
     uint32_t current_ = 0;  // I was too lazy for normal output
     uint32_t intermed_val = 0;  // to keep intermediate sum
-    // uint32_t current_index = 0;  // to get next elem quickly
     int64_t delta = 0;  // between target and intermediate val
     uint32_t left_ = 0;  // intermediate left number
     uint32_t pos_left = comb_size;
@@ -182,9 +180,6 @@ uint32_t *get_first_path(Elem_count *counter, uint32_t uniq_num, uint32_t* f_max
                 // printf("Switched cur to %d\n", current);
                 continue;
             }
-            // printf("AGAIN sup %d delta %lld inf %d\n", sup, delta, inf);
-            // printf("CURRENT ADDED %d\n", current);
-            // intermediate sum is in between, fine
             passed = true;
             res[pos_used] = current;
             path_count[current_index].times++;
@@ -238,25 +233,10 @@ uint32_t *solve_SSP(uint32_t *in_arr, uint32_t arr_size, uint32_t sub_size,
         uniq_num++;
     }
     verbose("# Found %d unique elems\n", uniq_num);
-
-    for (uint32_t c_ind = 0; c_ind < uniq_num; c_ind++)
-    // try different starting points
-    {
-        bool success = true;
-        verbose("# Trying c_ind %d\n", c_ind);
-        answer = get_first_path(elem_counted, uniq_num, f_max_acc,
-                                    f_min_acc, req_sum, sub_size, c_ind);
-        // if 0 in the array -> nothing found; negative result
-        for (uint32_t s = 0; s < sub_size; s++){
-           if (answer[s] == 0){success = false; break;}}
-        // continue if there is nothing
-        if (!success){continue;}
-        printf("# Found result for c_ind %d\n", c_ind);
-        // if we are here -> result was found
-        break;
-    }
-
-    // we wanted to find an only one answer, so return it
+    // find first path -> pathfinder with first parameter
+    // compare sun with the actual one
+    // if equal -> return it
+    // if not -> continue working with it
     _free_all();
     return answer;
 }

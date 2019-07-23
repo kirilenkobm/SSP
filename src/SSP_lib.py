@@ -55,6 +55,8 @@ class SSP_lib:
         path_count = Counter(try_path)
         path = try_path.copy()
         pos_left = subset_size - len(path)
+        f_max_a = self.f_max_acc.copy()
+        f_min_a = self.f_min_acc.copy()
         for i in range(pos_left):
             passed = False
             prev_sum = sum(path)
@@ -64,17 +66,18 @@ class SSP_lib:
                     return None
                 intermed_val = prev_sum + current
                 delta = self.req_sum - intermed_val
-                delta_in = delta in self.all_numbers
                 # if delta in -> no need to continue
-
-                if delta_in:
+                if delta in self.all_numbers:
                     path.append(current)
                     path.append(delta)
                     return path
-
                 points_left = pos_left - (i + 1)
-                sup = self.f_max_acc[points_left]
-                inf = self.f_min_acc[points_left]
+                sup = f_max_a[points_left]
+                inf = f_min_a[points_left]
+                if delta == inf:
+                    print(path)
+                    print(delta)
+                    exit()
 
                 if delta > sup:
                     break

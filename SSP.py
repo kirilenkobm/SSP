@@ -60,10 +60,21 @@ class SSP_main:
                     " to uint32_t max size")
         # ACTUALLY A PROBLEM
         tot_sum = sum(numbers)
+        min_elem = min(numbers)
         if tot_sum > UINT32_SIZE:
             sys.exit("Overall array sum is too big, it will overflow")
         elif self.requested_sum > tot_sum:
-            sys.exit("Requested sum > overall sum of the array, abort")
+            sys.exit("Requested sum {} > overall sum of the array {}, "
+                     "abort".format(self.requested_sum, tot_sum))
+        elif self.requested_sum < min_elem:
+            sys.exit("Requested sum {} < smallest element in the array {}, "
+                     "abort".format(self.requested_sum, min_elem))
+        elif self.requested_sum in numbers:
+            print("Requested sum is in array")
+            self.answer = [self.requested_sum]
+            self.__get_subset_sizes = self.__do_nothing
+            self.__configure_lib = self.__do_nothing
+            return
         self.in_arr = numbers
         self.in_arr_len = len(numbers)
         self.__v("# Input array of size {}".format(self.in_arr_len))
@@ -77,20 +88,20 @@ class SSP_main:
         # find the first elem what's bigger
         subset_sizes = []
         # 1 is deleted, should be specially noted
-        for sub_size in range(1, len(f_max_acc)):
-            inf = f_min_acc[sub_size]
-            sup = f_max_acc[sub_size]
+        for i in range(len(f_max_acc)):
+            sub_size = i + 1
+            inf = f_min_acc[i]
+            sup = f_max_acc[i]
             if self.requested_sum == inf:
                 # the problem is actually solved
                 # better to wrap in a class;
-                # TODO: make it fancier
-                self.answer = f_min[:sub_size + 1][::-1]
+                self.answer = f_min[:i + 1][::-1]
                 self.__configure_lib = self.__do_nothing
             elif self.requested_sum == sup:
-                self.answer = f_max[:sub_size + 1][::-1]
+                self.answer = f_max[:i + 1][::-1]
                 self.__configure_lib = self.__do_nothing
             elif inf < self.requested_sum < sup:
-                subset_sizes.append(sub_size + 1)
+                subset_sizes.append(sub_size)
         self.subset_sizes = subset_sizes
         self.__v("# Will try {} subset sizes".format(len(subset_sizes)))
 
@@ -155,7 +166,7 @@ class SSP_main:
         if self.answer is not None:
             # already known
             return self.answer
-        f_calls = 0
+        # ok, we actually have to compute this
         if self.subset_size != 0:
             self.__v("# One subset size was specified: {}".format(args.subset_size))
             self.subset_sizes = self.__make_single_size(self.subset_size,
@@ -168,7 +179,6 @@ class SSP_main:
             if answer:
                 self.answer = answer
                 break
-        self.__v("# Shared lib called {} times".format(f_calls))
         return self.answer
 
 def parse_args():
@@ -194,7 +204,6 @@ def main(input_file, requested_sum, subset_size, v):
     """Entry point."""
     ssp = SSP_main(input_file, requested_sum, subset_size, v)
     answer = ssp.solve_ssp()
-    assert sum(answer) == requested_sum
     print("The answer is:\n{}".format(str(answer)))
 
 if __name__ == "__main__":
