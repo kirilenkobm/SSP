@@ -13,7 +13,7 @@ make
 ./SSP.py test_input/3.txt 2 15
 ```
 
-On windows:
+On Windows:
 
 ```powershell
 git clone git@gitlab.com:kirilenkobm/ssp.git
