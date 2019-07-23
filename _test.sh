@@ -5,6 +5,7 @@ make clean
 make
 if [[ $? -ne 0 ]]; then
     echo "Make stage failed"
+    exit
 else 
     echo "Make successful"
 fi
@@ -19,6 +20,7 @@ echo "### Must return [7, 3]"
 $SSP $TEST_1 10
 if [[ $? -ne 0 ]]; then
     echo "Test 1 failed"
+    exit
 else 
     echo "Test 1 successful"
 fi
@@ -28,6 +30,7 @@ echo "### Must return [5, 3, 1, 1]"
 $SSP $TEST_1 10 -s 4
 if [[ $? -ne 0 ]]; then
     echo "Test 2 failed"
+    exit
 else 
     echo "Test 2 successful"
 fi

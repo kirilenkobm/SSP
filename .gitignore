@@ -7,3 +7,5 @@ __pycache__/
 __py_implementation.py
 .ipynb_checkpoints/
 .Rhistory
+performance/answers
+performance/inputs

@@ -125,7 +125,7 @@ uint32_t check_current(uint32_t current, uint32_t cur_index,
 
 
 uint32_t *get_first_path(Elem_count *counter, uint32_t uniq_num, uint32_t* f_max_a,
-                         uint32_t *f_min_a, uint32_t target,uint32_t comb_size,
+                         uint32_t *f_min_a, uint32_t target, uint32_t comb_size,
                          uint32_t current_index)
 // get the first, base combination
 {

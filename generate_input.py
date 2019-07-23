@@ -24,7 +24,10 @@ I_max = 100000
 def parse_args():
     """Parse and check args."""
     app = argparse.ArgumentParser()
-    app.add_argument("N", type=int, help="Input sample size")
+    app.add_argument("N", type=int, help="Input sample size. Also you can "
+                                         "call with 'clean' as the fitst "
+                                         "argument to delete all previously "
+                                         "generated inputs.")
     app.add_argument("n", type=int, help="Take n first elems to get sum "
                                          "that really exists")
     app.add_argument("std_scale", type=int)
