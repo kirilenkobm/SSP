@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Python implementation.
 
+Temporary replacement.
 To be rewritten in C.
 """
 from collections import Counter
@@ -60,10 +61,9 @@ class SSP_lib:
             raise OverflowError(err_msg)
         return current
 
-    def __extend_path(self, subset_size, try_path, lower):
+    def __extend_path(self, subset_size, try_path, current, first=False):
         """Try to find another way."""
         path_count = Counter(try_path)
-        current = lower
         path = try_path.copy()
         pos_left = subset_size - len(path)
         for i in range(pos_left):
@@ -75,6 +75,14 @@ class SSP_lib:
                     return None
                 intermed_val = prev_sum + current
                 delta = self.req_sum - intermed_val
+                delta_in = delta in self.all_numbers
+                # if delta in -> no need to continue
+
+                if delta_in:
+                    path.append(current)
+                    path.append(delta)
+                    return path
+
                 points_left = pos_left - (i + 1)
                 sup = self.f_max_acc[points_left]
                 inf = self.f_min_acc[points_left]
@@ -87,39 +95,19 @@ class SSP_lib:
                 passed = True
                 path.append(current)
                 path_count[current] += 1
-        if sum(path) != self.req_sum:
+        if sum(path) != self.req_sum and not first:
             return None
         return path
 
     def get_answer(self, subset_size):
         """Try to get answer of the size given."""
         # find the first pathway
-        current = self.all_numbers[0]
-        first_path = []
-        path_count = Counter()
-        for i in range(subset_size):
-            passed = False
-            prev_sum = sum(first_path)
-            current = self.__check_current(current, path_count)
-            while not passed:
-                if not current:
-                    return None
-                intermed_val = prev_sum + current
-                delta = self.req_sum - intermed_val
-                left_ = subset_size - (i + 1)
-                sup = self.f_max_acc[left_]
-                inf = self.f_min_acc[left_]
-
-                if delta > sup:
-                    break
-                elif delta < inf:
-                    current = self.__get_next_size(current)
-                    continue
-                passed = True
-                first_path.append(current)
-                path_count[current] += 1
+        start = self.all_numbers[0]
+        first_path = self.__extend_path(subset_size, [], start, True)
         if sum(first_path) == self.req_sum:
+            # the best case
             return first_path
+        # the worst case
         for pointer in range(subset_size - 2, -1, -1):
             pointed = first_path[pointer]
             possible = True

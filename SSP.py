@@ -20,7 +20,7 @@ __version__ = 0.1
 UINT32_SIZE = 4294967295
 
 
-class SSP:
+class SSP_main:
     """Subset Sum Problem Solver."""
     def __init__(self, in_file, req_sum, subset_size=0, v=False):
         """Initiate the class."""
@@ -159,8 +159,7 @@ class SSP:
             return False
         self.__v("# Found result at subset size {}".format(subset_size))
         del self.lib
-        self.answer = _answer
-        return True  # signal to stop
+        return _answer
 
     def solve_ssp(self):
         """Get answer."""
@@ -172,13 +171,10 @@ class SSP:
             self.__v("# One subset size was specified: {}".format(args.subset_size))
             self.subset_sizes = self.__make_single_size(self.subset_size,
                                                         self.subset_sizes)
-        # temporary python replacement
+        # !!!temporary python replacement
         solver = SSP_lib(self.in_arr, self.requested_sum)
         for subset_size in self.subset_sizes:
-            # stop_iter = self.__call_lib(subset_size)
-            # f_calls += 1
-            # if stop_iter:  # stop, we found what we need
-            #     break
+            # answer = self.__call_lib(subset_size)
             answer = solver.get_answer(subset_size)
             if answer:
                 self.answer = answer
@@ -207,10 +203,10 @@ def parse_args():
 
 def main(input_file, requested_sum, subset_size, v):
     """Entry point."""
-    ssp = SSP(input_file, requested_sum, subset_size, v)
+    ssp = SSP_main(input_file, requested_sum, subset_size, v)
     answer = ssp.solve_ssp()
+    assert sum(answer) == requested_sum
     print("The answer is:\n{}".format(str(answer)))
-    
 
 if __name__ == "__main__":
     args = parse_args()
