@@ -6,6 +6,10 @@ To be rewritten in C.
 """
 from collections import Counter
 
+__author__ = "Bogdan Kirilenko"
+__email__ = "kirilenkobm@gmail.com"
+__version__ = 0.1
+
 
 class SSP_lib:
     """Class to be replaced with C."""
@@ -15,25 +19,10 @@ class SSP_lib:
         self.req_sum = req_sum
         self.f_max = [0] + sorted(in_arr, reverse=True)
         self.f_min = [0] + sorted(in_arr)
-        self.f_max_acc = self.__accumulate_sum(self.f_max)
-        self.f_min_acc = self.__accumulate_sum(self.f_min)
+        self.f_max_acc = accumulate_sum(self.f_max)
+        self.f_min_acc = accumulate_sum(self.f_min)
         self.all_available = Counter(in_arr)
         self.all_numbers = sorted(set(self.f_max), reverse=True)
-
-    @staticmethod
-    def __accumulate_sum(lst):
-        """Return accumulated sum list."""
-        if len(lst) == 1:
-            return lst
-        accumulated_sum = [lst[0]]
-        for i in range(1, len(lst)):
-            accumulated_sum.append(accumulated_sum[i - 1] + lst[i])
-        return accumulated_sum
-
-    @staticmethod
-    def flatten(lst):
-        """Flatten a list of lists into a list."""
-        return [item for sublist in lst for item in sublist]
 
     def __get_next_size(self, current_size):
         """Get the next lesser size."""
@@ -61,7 +50,7 @@ class SSP_lib:
             raise OverflowError(err_msg)
         return current
 
-    def __extend_path(self, subset_size, try_path, current, first=False):
+    def _find_path(self, subset_size, try_path, current, first=False):
         """Try to find another way."""
         path_count = Counter(try_path)
         path = try_path.copy()
@@ -103,7 +92,7 @@ class SSP_lib:
         """Try to get answer of the size given."""
         # find the first pathway
         start = self.all_numbers[0]
-        first_path = self.__extend_path(subset_size, [], start, True)
+        first_path = self._find_path(subset_size, [], start, True)
         if sum(first_path) == self.req_sum:
             # the best case
             return first_path
@@ -111,6 +100,8 @@ class SSP_lib:
         for pointer in range(subset_size - 2, -1, -1):
             pointed = first_path[pointer]
             possible = True
+            # trying to find path decreasing
+            # the pointed value
             while possible:
                 lower = self.__get_next_size(pointed)
                 if not lower:
@@ -118,12 +109,29 @@ class SSP_lib:
                     break
                 try_path = first_path[:pointer]
                 try_path.append(lower)
-                new_res = self.__extend_path(subset_size, try_path, lower)
+                new_res = self._find_path(subset_size, try_path, lower)
                 pointed = lower
                 if not new_res:
                     continue
                 return new_res
+        # unfortunately, nothing was found
         return False
+
+
+def flatten(lst):
+    """Flatten a list of lists into a list."""
+    return [item for sublist in lst for item in sublist]
+
+
+def accumulate_sum(lst):
+    """Return accumulated sum list."""
+    if len(lst) == 1:
+        return lst
+    accumulated_sum = [lst[0]]
+    for i in range(1, len(lst)):
+        accumulated_sum.append(accumulated_sum[i - 1] + lst[i])
+    return accumulated_sum
+
 
 if __name__ == "__main__":
     pass

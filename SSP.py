@@ -9,8 +9,8 @@ import numpy as np
 from numpy.ctypeslib import ndpointer
 import ctypes
 from src.SSP_lib import SSP_lib
+from src.SSP_lib import accumulate_sum
 
-# FAILS FOR EXAMPLE 9_C_100
 __author__ = "Bogdan Kirilenko"
 __email__ = "kirilenkobm@gmail.com"
 __version__ = 0.1
@@ -72,8 +72,8 @@ class SSP_main:
         """Get subset sizes to check."""
         f_min = self.in_arr.copy()
         f_max = self.in_arr[::-1]
-        f_min_acc = self.accumulate_sum(f_min)
-        f_max_acc = self.accumulate_sum(f_max)
+        f_min_acc = accumulate_sum(f_min)
+        f_max_acc = accumulate_sum(f_max)
         # find the first elem what's bigger
         subset_sizes = []
         # 1 is deleted, should be specially noted
@@ -109,17 +109,6 @@ class SSP_main:
                                        ctypes.c_uint32,
                                        ctypes.c_bool]
         self.lib.solve_SSP.restype = ctypes.POINTER(ctypes.c_uint32)
-
-    @staticmethod
-    def accumulate_sum(lst):
-        """Just accumulate a sum of array."""
-        """Return accumulated sum list."""
-        if len(lst) == 1:
-            return lst
-        accumulated_sum = [lst[0]]
-        for i in range(1, len(lst)):
-            accumulated_sum.append(accumulated_sum[i - 1] + lst[i])
-        return accumulated_sum
 
     @staticmethod
     def __make_single_size(req, available):
