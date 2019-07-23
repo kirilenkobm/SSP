@@ -50,13 +50,22 @@ class SSP_lib:
             raise OverflowError(err_msg)
         return current
 
+    @staticmethod
+    def __redefine_f_max(f_max, elem):
+        """Redefine fmax considering already added elements."""
+        elem_ind = f_max.index(elem)
+        trimmed_f_mac = f_max[elem_ind + 1:]
+        upd_f_max = [0] + trimmed_f_mac
+        return upd_f_max
+
     def _find_path(self, subset_size, try_path, current, first=False):
         """Try to find another way."""
         path_count = Counter(try_path)
         path = try_path.copy()
         pos_left = subset_size - len(path)
-        f_max_a = self.f_max_acc.copy()
-        f_min_a = self.f_min_acc.copy()
+        f_max_ = self.f_max.copy()
+        f_max_a_ = self.f_max_acc.copy()
+        f_min_a_ = self.f_min_acc.copy()
         for i in range(pos_left):
             passed = False
             prev_sum = sum(path)
@@ -67,18 +76,16 @@ class SSP_lib:
                 intermed_val = prev_sum + current
                 delta = self.req_sum - intermed_val
                 # if delta in -> no need to continue
-                if delta in self.all_numbers:
-                    path.append(current)
-                    path.append(delta)
-                    return path
+                # WARNING!
+                # need to consider that delta might be run out
+                # if delta in self.all_numbers:
+                #     print(delta_avail)
+                #     path.append(current)
+                #     path.append(delta)
+                #     return path
                 points_left = pos_left - (i + 1)
-                sup = f_max_a[points_left]
-                inf = f_min_a[points_left]
-                if delta == inf:
-                    print(path)
-                    print(delta)
-                    exit()
-
+                sup = f_max_a_[points_left]
+                inf = f_min_a_[points_left]
                 if delta > sup:
                     break
                 elif delta < inf:
@@ -87,6 +94,8 @@ class SSP_lib:
                 passed = True
                 path.append(current)
                 path_count[current] += 1
+                f_max_ = self.__redefine_f_max(f_max_, current)
+                f_max_a_ = accumulate_sum(f_max_)
         if sum(path) != self.req_sum and not first:
             return None
         return path

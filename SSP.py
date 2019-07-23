@@ -204,7 +204,7 @@ def main(input_file, requested_sum, subset_size, v):
     """Entry point."""
     ssp = SSP_main(input_file, requested_sum, subset_size, v)
     answer = ssp.solve_ssp()
-    print("The answer is:\n{}".format(str(answer)))
+    print("The answer is:\n{}".format(str(sorted(answer, reverse=True))))
 
 if __name__ == "__main__":
     args = parse_args()
