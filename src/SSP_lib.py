@@ -75,14 +75,6 @@ class SSP_lib:
                     return None
                 intermed_val = prev_sum + current
                 delta = self.req_sum - intermed_val
-                # if delta in -> no need to continue
-                # WARNING!
-                # need to consider that delta might be run out
-                # if delta in self.all_numbers:
-                #     print(delta_avail)
-                #     path.append(current)
-                #     path.append(delta)
-                #     return path
                 points_left = pos_left - (i + 1)
                 sup = f_max_a_[points_left]
                 inf = f_min_a_[points_left]
@@ -94,6 +86,14 @@ class SSP_lib:
                 passed = True
                 path.append(current)
                 path_count[current] += 1
+
+                # if delta is available number -> add this
+                if delta in self.all_numbers:
+                    delta_avail = self.all_available[delta] - path_count[delta]
+                    if delta_avail > 0:
+                        path.append(delta)
+                        return path
+                    # else, delta is spent out
                 f_max_ = self.__redefine_f_max(f_max_, current)
                 f_max_a_ = accumulate_sum(f_max_)
         if sum(path) != self.req_sum and not first:
