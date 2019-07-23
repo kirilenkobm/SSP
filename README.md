@@ -10,7 +10,7 @@ On Linux/MacOS:
 git clone git@gitlab.com:kirilenkobm/ssp.git
 cd ssp
 make
-./SSP.py test_input/3.txt 2 9
+./SSP.py test_input/3.txt 2 15
 ```
 
 On windows:
@@ -19,10 +19,10 @@ On windows:
 git clone git@gitlab.com:kirilenkobm/ssp.git
 cd ssp
 .\win_make.bat
-python .\SSP.py test_input\3.txt 2 9
+python .\SSP.py test_input\3.txt 2 15
 ```
 
-The answer for 3.txt should be [4, 5] and [3, 6]
+The answer for 3.txt should be [8, 3, 3, 1]
 
 Inputs may be generated with generate_input.py
 
