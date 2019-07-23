@@ -8,7 +8,9 @@ from datetime import datetime as dt
 import numpy as np
 from numpy.ctypeslib import ndpointer
 import ctypes
+from src.SSP_lib import SSP_lib
 
+# FAILS FOR EXAMPLE 9_C_100
 __author__ = "Bogdan Kirilenko"
 __email__ = "kirilenkobm@gmail.com"
 __version__ = 0.1
@@ -170,10 +172,16 @@ class SSP:
             self.__v("# One subset size was specified: {}".format(args.subset_size))
             self.subset_sizes = self.__make_single_size(self.subset_size,
                                                         self.subset_sizes)
+        # temporary python replacement
+        solver = SSP_lib(self.in_arr, self.requested_sum)
         for subset_size in self.subset_sizes:
-            stop_iter = self.__call_lib(subset_size)
-            f_calls += 1
-            if stop_iter:  # stop, we found what we need
+            # stop_iter = self.__call_lib(subset_size)
+            # f_calls += 1
+            # if stop_iter:  # stop, we found what we need
+            #     break
+            answer = solver.get_answer(subset_size)
+            if answer:
+                self.answer = answer
                 break
         self.__v("# Shared lib called {} times".format(f_calls))
         return self.answer
