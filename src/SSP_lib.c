@@ -113,7 +113,7 @@ Num_q *_get_zero_num_q(uint64_t elem_num)
 
 
 
-void add_to_counter(Num_q *counter, uint64_t *arr, uint64_t arr_size)
+void add_to_zero_counter(Num_q *counter, uint64_t *arr, uint64_t arr_size)
 // add elements to the counter
 {
     uint64_t counter_ind = 0;
@@ -135,7 +135,7 @@ void add_to_counter(Num_q *counter, uint64_t *arr, uint64_t arr_size)
 }
 
 
-uint64_t arr_sum(arr, up_to)
+uint64_t arr_sum(uint64_t *arr, uint64_t up_to)
 // return array sum
 {
     if (up_to == 0){return 0;}
@@ -164,7 +164,8 @@ uint64_t check_current(Num_q *path, uint64_t cur_ind)
 
 
 uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
-                    uint64_t _cur_val, uint64_t _cur_ind, uint64_t elem_num)
+                    uint64_t _cur_val, uint64_t _cur_ind, uint64_t elem_num,
+                    uint64_t req_sum)
 // the core function -> finds a path
 {
     // initiate values
@@ -180,22 +181,57 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
         for (uint64_t i = 0; i < prev_p_len; i++){path[i] = prev_path[i];}
         pos_left = sub_size - prev_p_len;
         // add exitsing values to counter
-        add_to_counter(path_count, prev_path, prev_p_len);
+        add_to_zero_counter(path_count, prev_path, prev_p_len);
     } else {pos_left = sub_size;}
 
     // create local f_max and f_min
     uint64_t *f_max_a = accumulate_sum(f_max, arr_size);
     uint64_t *f_min_a = accumulate_sum(f_min, arr_size);
+    // values I need insude
+    uint64_t intermed_val = 0;
+    uint64_t prev_sum = 0;
+    int64_t delta = 0;  // might be negative!
+    uint64_t sup = 0;
+    uint64_t inf = 0;
+    uint64_t points_left = 0;
 
     for (uint64_t i = 0; i < pos_left; i++)
     // the main loop, trying to add the next element
     {
         bool passed = false;
-        uint64_t prev_sum = arr_sum(path, path_len);
+        prev_sum = arr_sum(path, path_len);
         cur_ind = check_current(path_count, cur_ind);
         cur_val = num_count[cur_ind].number;
 
-        
+        while (!passed)
+        // trying to add the current value
+        {
+            // no values left
+            if (cur_val == 0){
+                free(f_max_a);
+                free(f_min_a);
+                return path;
+            }
+            // get intermediate values
+            intermed_val = prev_sum + cur_val;
+            delta = req_sum - intermed_val;
+            points_left = pos_left - (i + 1);
+            sup = f_max_a[points_left];
+            inf = f_min_a[points_left];
+
+            // need to be carefull -> comparing signed vs unsigned
+            if ((delta > 0) && (uint64_t)delta > sup){
+                // unreachable
+                break;
+            } else if ((delta < 0) || (uint64_t)delta < inf){
+                // get next value, skip iter
+                cur_ind++;
+                cur_val = num_count[cur_ind].number;
+                continue;
+            }
+            // ok, value passed, let's add it
+            passed = true;
+        }
 
     }
     free(f_max_a);
@@ -227,8 +263,7 @@ uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size, uint64_t sub_size,
     // now find the first path
     uint64_t cur_ind = 0;
     uint64_t cur_val = num_count[cur_ind].number;
-
-    uint64_t *first_path = find_path(sub_size, NULL, 0, cur_val, cur_ind, elem_num);
+    uint64_t *first_path = find_path(sub_size, NULL, 0, cur_val, cur_ind, elem_num, req_sum);
 
     // allocate the result and fill it
     uint64_t *answer = (uint64_t*)calloc(sub_size, sizeof(uint64_t));
