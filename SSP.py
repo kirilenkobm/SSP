@@ -7,20 +7,17 @@ import platform
 from datetime import datetime as dt
 from math import log
 import ctypes
-# from src.SSP_lib import SSP_lib  # python replacement
-# from src.SSP_lib import accumulate_sum
 
 __author__ = "Bogdan Kirilenko"
 __email__ = "kirilenkobm@gmail.com"
 __version__ = 0.1
 
-# actually, it will overflow on values like this
-# arr sum should be limited to uint64_t max
+# within the C library everything is uint64_t
 UINT64_SIZE = 18446744073709551615
 
 
-class SSP_main:
-    """Subset Sum Problem Solver."""
+class SSP_wrapper:
+    """SSP shared library wrapper."""
     def __init__(self, in_file, req_sum, subset_size=0, v=False, d=False):
         """Initiate the class."""
         self.in_file = in_file
@@ -38,9 +35,9 @@ class SSP_main:
         """Just do nothing."""
         pass
 
-    def __v(self, msg):
+    def __v(self, msg, end="\n"):
         """Print a verbose message."""
-        sys.stderr.write(msg + "\n") if self._verbose else None
+        sys.stderr.write(msg + end) if self._verbose else None
 
     def __make_input_arr(self):
         """Read input and check it."""
@@ -50,7 +47,8 @@ class SSP_main:
             numbers = sorted([int(x.rstrip()) for x in f.readlines()])
         except ValueError:  # there was something non-numeric!
             sys.exit("Error: in input, numeric values expected.")
-        f.close()
+        finally:  # Q: will it work after sys.exit()?
+            f.close()
         # check for boundaries
         if any(x < 0 for x in numbers):
             sys.exit("Sorry, but for now works for non-negative"
@@ -58,7 +56,7 @@ class SSP_main:
         elif any(x > UINT64_SIZE for x in numbers):
             sys.exit("Sorry, but input number size is limited"
                     " to uint64_t capacity")
-        # ACTUALLY A PROBLEM
+        # check limits
         tot_sum = sum(numbers)
         arr_len = len(numbers)
         min_elem = min(numbers)
@@ -78,7 +76,7 @@ class SSP_main:
             sys.exit("Requested sum {} < smallest element in the array {}, "
                      "abort".format(self.requested_sum, min_elem))
         elif self.requested_sum in numbers:
-            print("Requested sum is in array")
+            print("Requested sum is in the array")
             self.answer = [self.requested_sum]
             self.__get_subset_sizes = self.__do_nothing
             self.__configure_lib = self.__do_nothing
@@ -89,7 +87,7 @@ class SSP_main:
 
     def __get_subset_sizes(self):
         """Get subset sizes to check."""
-        f_min = self.in_arr.copy()
+        f_min = self.in_arr[:]
         f_max = self.in_arr[::-1]
         f_min_acc = accumulate_sum(f_min)
         f_max_acc = accumulate_sum(f_max)
@@ -102,7 +100,6 @@ class SSP_main:
             sup = f_max_acc[i]
             if self.requested_sum == inf:
                 # the problem is actually solved
-                # better to wrap in a class;
                 self.answer = f_min[:i + 1][::-1]
                 self.__configure_lib = self.__do_nothing
             elif self.requested_sum == sup:
@@ -127,11 +124,17 @@ class SSP_main:
                                        ctypes.c_uint64,
                                        ctypes.c_uint64,
                                        ctypes.c_bool]
+        
+        self.c_arr = (ctypes.c_uint64 * (self.in_arr_len + 1))()
+        self.c_arr[:-1] = self.in_arr
+        self.c_arr_size = ctypes.c_uint64(self.in_arr_len)
+        self.c_req_sum = ctypes.c_uint64(self.requested_sum)
+        self.c_v = ctypes.c_bool(self._verbose)
         self.lib.solve_SSP.restype = ctypes.POINTER(ctypes.c_uint64)
 
     @staticmethod
     def __make_single_size(req, available):
-        """Check if requested elem len is possible."""
+        """Check if requested subset length is possible."""
         if req < available[0] or req > available[-1]:
             print("# Impossible to find combination of length {}".format(req))
             print("# Please use one of these for this input:")
@@ -142,27 +145,19 @@ class SSP_main:
     def __call_lib(self, subset_size):
         """Call lib with the parameters given."""
         self.__v("# Trying subset size: {}".format(subset_size))
-        c_arr = (ctypes.c_uint64 * (self.in_arr_len + 1))()
-        c_arr[:-1] = self.in_arr
-        c_arr_size = ctypes.c_uint64(self.in_arr_len)
-        c_sub_size = ctypes.c_uint64(subset_size)
-        c_req_sum = ctypes.c_uint64(self.requested_sum)
-        c_v = ctypes.c_bool(self._verbose)
+        self.c_sub_size = ctypes.c_uint64(subset_size)
         # get and parse the result
-        result = self.lib.solve_SSP(c_arr,
-                                    c_arr_size,
-                                    c_sub_size,
-                                    c_req_sum,
-                                    c_v)
-        # get everything except 0
+        result = self.lib.solve_SSP(self.c_arr,
+                                    self.c_arr_size,
+                                    self.c_sub_size,
+                                    self.c_req_sum,
+                                    self.c_v)
+        # get everything except 0; check the answer
         _answer = [result[i] for i in range(subset_size) if result[i] != 0]
-        # if starts with 0 -> nothing found at all
         if sum(_answer) != self.requested_sum:
             msg_ = "No results for:\n IN FILE: {} REQ_SUM: {} SUBSET_SIZE: {}" \
                    "".format(self.in_file, self.requested_sum, subset_size)
             self.__v(msg_)
-            del self.lib  # no need to stop iter:
-            self.__configure_lib()
             return False
         # answer is correct
         self.__v("# Found result at subset size {}".format(subset_size))
@@ -175,17 +170,16 @@ class SSP_main:
             # answer already found
             return self.answer
         # ok, we actually have to compute this
-        if self.subset_size != 0:
-            self.__v("# Required subset size was specified: {}".format(args.subset_size))
+        if self.subset_size != 0:  # check if the requested length is valid
+            self.__v("# Subset size was specified: {}".format(args.subset_size))
             self.subset_sizes = self.__make_single_size(self.subset_size,
                                                         self.subset_sizes)
-        # temporary python replacement:
-        # solver = SSP_lib(self.in_arr, self.requested_sum)
         for subset_size in self.subset_sizes:
+            # call for different subset sizes until we get the answer
             answer = self.__call_lib(subset_size)
-            if answer:
+            if answer:  # stop, it's enough
                 self.answer = answer
-                break
+                return self.answer
         return self.answer
 
 def parse_args():
@@ -221,7 +215,7 @@ def accumulate_sum(lst):
 
 def main(input_file, requested_sum, subset_size, v, d):
     """Entry point."""
-    ssp = SSP_main(input_file, requested_sum, subset_size, v, d)
+    ssp = SSP_wrapper(input_file, requested_sum, subset_size, v, d)
     answer = ssp.solve_ssp()
     ans_str = str(sorted(answer, reverse=True)) if answer else "None"
     print("The answer is:\n{}".format(ans_str))
