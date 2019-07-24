@@ -28,7 +28,7 @@ uint64_t *f_max;
 uint64_t *f_min;
 uint64_t *first_path;
 Num_q *num_count;
-
+uint64_t _elem_num_max;
 
 void _free_all()
 // free all allocated stuff
@@ -49,6 +49,18 @@ void verbose(const char * restrict format, ...)
     vprintf(format, args);
     va_end(args);
     return;
+}
+
+
+
+uint64_t _elem_search(uint64_t w)
+// very dumb implementation in O(N)
+// rewrite it better
+{
+    for (uint64_t i = 0; i < _elem_num_max; i++){
+        if (num_count[i].number == w){return i;}
+    }
+    return _elem_num_max;
 }
 
 
@@ -236,6 +248,26 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
             path[path_len] = cur_val;
             path_count[cur_ind].quantity++;
             path_len++;
+
+            if (delta > 0)
+            // we can also check if delta exists
+            // if yes -> just add it to answer and return
+            {
+                uint64_t delta_ind = _elem_search((uint64_t)delta);
+                uint64_t delta_spent = path_count[delta_ind].quantity;
+                uint64_t delta_avail = num_count[delta_ind].quantity;
+                // if 0 > not found actually
+                // but I don't like conglomeration of if's
+                if ((delta_avail > 0) && (delta_spent < delta_avail))
+                // yes, it is available
+                {
+                    path[path_len] = delta;
+                    free(f_max_a);
+                    free(f_min_a);
+                    return path;
+                }
+            }
+
         }
     }
     free(f_max_a);
@@ -263,6 +295,7 @@ uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size, uint64_t sub_size,
     // now count the elements
     uint64_t elem_num = 0;
     num_count = count_elements(f_max, arr_size, &elem_num);
+    _elem_num_max = elem_num;
 
     // now find the first path
     uint64_t cur_ind = 0;

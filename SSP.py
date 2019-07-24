@@ -154,17 +154,17 @@ class SSP_main:
                                     c_sub_size,
                                     c_req_sum,
                                     c_v)
-        _answer = [result[i] for i in range(subset_size)]
+        # get everything except 0
+        _answer = [result[i] for i in range(subset_size) if result[i] != 0]
         # if starts with 0 -> nothing found at all
-        if _answer[0] == 0 or sum(_answer) != self.requested_sum:
-            msg_ = "No results for:\n IN FILE: {} REQ_SUM: {}" \
-                  " SUBSET_SIZE: {}".format(self.in_file,
-                                            self.requested_sum,
-                                            subset_size)
+        if sum(_answer) != self.requested_sum:
+            msg_ = "No results for:\n IN FILE: {} REQ_SUM: {} SUBSET_SIZE: {}" \
+                   "".format(self.in_file, self.requested_sum, subset_size)
             self.__v(msg_)
             del self.lib  # no need to stop iter:
             self.__configure_lib()
             return False
+        # answer is correct
         self.__v("# Found result at subset size {}".format(subset_size))
         del self.lib
         return _answer
@@ -183,6 +183,8 @@ class SSP_main:
         solver = SSP_lib(self.in_arr, self.requested_sum)
         for subset_size in self.subset_sizes:
             _answer = self.__call_lib(subset_size)
+            print("C output is:")
+            print(_answer)
             answer = solver.get_answer(subset_size)
             if answer:
                 self.answer = answer
