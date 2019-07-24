@@ -4,11 +4,11 @@ Each problem requires a solution.
 
 A formal definition of the subset sum problem is:
 
-A set of integers S is given
+- A set of integers S is given
 
-Also given a target X
+- Also given a target X
 
-Find a subset s ∈ S such as:
+- Find a subset s ∈ S such as:
 
 ```math
 \sum_{i=0}^n s_n = X
@@ -22,7 +22,7 @@ On Linux/MacOS:
 git clone git@gitlab.com:kirilenkobm/ssp.git
 cd ssp
 make
-./SSP.py test_input/3.txt 2 15
+./SSP.py test_input/3.txt 15
 ```
 
 On Windows:
@@ -31,7 +31,7 @@ On Windows:
 git clone git@gitlab.com:kirilenkobm/ssp.git
 cd ssp
 .\win_make.bat
-python .\SSP.py test_input\3.txt 2 15
+python .\SSP.py test_input\3.txt 15
 ```
 
 The answer for 3.txt should be [8, 3, 3, 1]
