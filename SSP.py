@@ -16,8 +16,8 @@ __email__ = "kirilenkobm@gmail.com"
 __version__ = 0.1
 
 # actually, it will overflow on values like this
-# arr sum should be limited to uint32_t max
-UINT32_SIZE = 4294967295
+# arr sum should be limited to uint64_t max
+UINT64_SIZE = 18446744073709551615
 
 
 class SSP_main:
@@ -56,9 +56,9 @@ class SSP_main:
         if any(x < 0 for x in numbers):
             sys.exit("Sorry, but for now works for non-negative"
                     " numbers only.")
-        elif any(x > UINT32_SIZE for x in numbers):
+        elif any(x > UINT64_SIZE for x in numbers):
             sys.exit("Sorry, but input nmber size is limited"
-                    " to uint32_t max size")
+                    " to uint64_t max size")
         # ACTUALLY A PROBLEM
         tot_sum = sum(numbers)
         arr_len = len(numbers)
@@ -69,7 +69,7 @@ class SSP_main:
             # we were reqested to print dataset density
             dens = arr_len / log(max_elem, 2)
             print("# Dataset density is:\n# {}".format(dens))
-        if tot_sum > UINT32_SIZE:
+        if tot_sum > UINT64_SIZE:
             sys.exit("Overall array sum is too big, it will overflow")
         elif self.requested_sum > tot_sum:
             sys.exit("Requested sum {} > overall sum of the array {}, "
@@ -122,12 +122,12 @@ class SSP_main:
             sys.exit("Please call make or win_make.bat first")
         self.lib = ctypes.cdll.LoadLibrary(lib_path)
         # convert everyting into C types
-        self.lib.solve_SSP.argtypes = [ctypes.POINTER(ctypes.c_uint32),
-                                       ctypes.c_uint32,
-                                       ctypes.c_uint32,
-                                       ctypes.c_uint32,
+        self.lib.solve_SSP.argtypes = [ctypes.POINTER(ctypes.c_uint64),
+                                       ctypes.c_uint64,
+                                       ctypes.c_uint64,
+                                       ctypes.c_uint64,
                                        ctypes.c_bool]
-        self.lib.solve_SSP.restype = ctypes.POINTER(ctypes.c_uint32)
+        self.lib.solve_SSP.restype = ctypes.POINTER(ctypes.c_uint64)
 
     @staticmethod
     def __make_single_size(req, available):
@@ -142,11 +142,11 @@ class SSP_main:
     def __call_lib(self, subset_size):
         """Call lib with the parameters given."""
         self.__v("# Trying subset size: {}".format(subset_size))
-        c_arr = (ctypes.c_uint32 * (self.in_arr_len + 1))()
+        c_arr = (ctypes.c_uint64 * (self.in_arr_len + 1))()
         c_arr[:-1] = self.in_arr
-        c_arr_size = ctypes.c_uint32(self.in_arr_len)
-        c_sub_size = ctypes.c_uint32(subset_size)
-        c_req_sum = ctypes.c_uint32(self.requested_sum)
+        c_arr_size = ctypes.c_uint64(self.in_arr_len)
+        c_sub_size = ctypes.c_uint64(subset_size)
+        c_req_sum = ctypes.c_uint64(self.requested_sum)
         c_v = ctypes.c_bool(self._verbose)
         # get and parse the result
         result = self.lib.solve_SSP(c_arr,
@@ -182,7 +182,7 @@ class SSP_main:
         # !!!temporary python replacement
         solver = SSP_lib(self.in_arr, self.requested_sum)
         for subset_size in self.subset_sizes:
-            # answer = self.__call_lib(subset_size)
+            _answer = self.__call_lib(subset_size)
             answer = solver.get_answer(subset_size)
             if answer:
                 self.answer = answer

@@ -144,6 +144,25 @@ uint64_t arr_sum(arr, up_to)
     return res;
 }
 
+
+uint64_t check_current(Num_q *path, uint64_t cur_ind)
+// check if current value still can be used, decrease it or return 0 otherwise
+// if all possible elements vere spent
+{
+    uint64_t used = path[cur_ind].quantity;
+    uint64_t available = num_count[cur_ind].quantity;
+    assert(available >= used);
+    if (available == used)
+    {
+        // we cannot use this elem -> this is over
+        // if 0 -> all are over, so there is no way
+        return num_count[cur_ind + 1].number;
+    }
+    // we still have this number
+    return cur_ind;
+}
+
+
 uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
                     uint64_t _cur_val, uint64_t _cur_ind, uint64_t elem_num)
 // the core function -> finds a path
@@ -173,7 +192,11 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
     {
         bool passed = false;
         uint64_t prev_sum = arr_sum(path, path_len);
+        cur_ind = check_current(path_count, cur_ind);
+        cur_val = num_count[cur_ind].number;
+
         
+
     }
     free(f_max_a);
     free(f_min_a);
