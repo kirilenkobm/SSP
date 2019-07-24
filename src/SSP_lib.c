@@ -178,6 +178,31 @@ uint64_t check_current(Num_q *path, uint64_t cur_ind)
 }
 
 
+// trim f_max function
+void redefine_f_max(uint64_t *_f_max, uint64_t *_f_arr_len, uint64_t cur_val)
+{
+    // I think the trickier solution would be just to increment the _f_max
+    // pointer until it gets to the cur_val and then do _f_max[0] == 0
+    // then substract the number of steps; maybe I'll try this later
+    uint64_t *_temp = (uint64_t*)calloc(*_f_arr_len, sizeof(uint64_t));
+    uint64_t j = 0;
+    // move to f_max what we need
+    for (uint64_t i = 0; i < *_f_arr_len; i++){
+        if (_f_max[i] <= cur_val){
+            _temp[j] = _f_max[i];
+            j++;
+        }
+    }
+    _temp[0] = 0;  // should start with 0
+    *_f_arr_len = j;
+    for (uint64_t i = 0; i < *_f_arr_len; i++){
+        _f_max[i] = _temp[i];
+    }
+    // _f_max = (uint64_t*)realloc(_f_max, *_f_arr_len * sizeof(uint64_t));
+    free(_temp);
+}
+
+
 uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
                     uint64_t _cur_val, uint64_t _cur_ind, uint64_t elem_num,
                     uint64_t req_sum)
@@ -186,7 +211,8 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
     // initiate values
     uint64_t *path = (uint64_t*)calloc(sub_size + CHUNK, sizeof(uint64_t));
     Num_q *path_count = _get_zero_num_q(elem_num);
-    uint64_t pos_left;
+    uint64_t pos_left;  // don't change this
+    uint64_t _l_f_arr_size = arr_size;  // to keep local
     uint64_t path_len = prev_p_len;
     uint64_t cur_val = _cur_val;
     uint64_t cur_ind = _cur_ind;
@@ -203,8 +229,8 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
     // create local f_max and f_min
     uint64_t *f_max_a = accumulate_sum(f_max, arr_size);
     uint64_t *f_min_a = accumulate_sum(f_min, arr_size);
-    uint64_t *_f_max = (uint64_t*)malloc(_f_arr_size * sizeof(uint64_t));
-    for (uint64_t i = 0; i < _f_arr_size; i++){_f_max[i] = f_max[i];}
+    uint64_t *_f_max = (uint64_t*)malloc(_l_f_arr_size * sizeof(uint64_t));
+    for (uint64_t i = 0; i < _l_f_arr_size; i++){_f_max[i] = f_max[i];}
     // values I need insude
     uint64_t intermed_val = 0;
     uint64_t prev_sum = 0;
@@ -232,6 +258,7 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
             if (cur_val == 0){
                 free(f_max_a);
                 free(f_min_a);
+                free(_f_max);
                 return path;
             }
             // get intermediate values
@@ -275,10 +302,26 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
                     return path;
                 }
             }
+            // carefully redefine _f_max here
+            // and then redefine f_max_accumulated
+            redefine_f_max(_f_max, &_l_f_arr_size, cur_val);
+            free(f_max_a);
+            f_max_a = accumulate_sum(_f_max, _l_f_arr_size);
+            // check that new array size still fits
+            if (points_left > _l_f_arr_size)
+            // horrible case
+            // in this case the sum is really unreachable
+            {
+                free(f_max_a);
+                free(f_min_a);
+                free(_f_max);
+                return path;
+            }
         }
     }
     free(f_max_a);
     free(f_min_a);
+    free(_f_max);
     return path;
 }
 

@@ -36,6 +36,8 @@ uint64_t arr_sum(uint64_t *arr, uint64_t up_to);
 
 uint64_t check_current(Num_q *path, uint64_t cur_ind);
 
+void redefine_f_max(uint64_t *_f_max, uint64_t *_f_arr_len, uint64_t cur_val);
+
 uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
                     uint64_t _cur_val, uint64_t _cur_ind, uint64_t elem_num,
                     uint64_t req_sum);
