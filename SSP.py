@@ -56,8 +56,8 @@ class SSP_main:
             sys.exit("Sorry, but for now works for non-negative"
                     " numbers only.")
         elif any(x > UINT64_SIZE for x in numbers):
-            sys.exit("Sorry, but input nmber size is limited"
-                    " to uint64_t max size")
+            sys.exit("Sorry, but input number size is limited"
+                    " to uint64_t capacity")
         # ACTUALLY A PROBLEM
         tot_sum = sum(numbers)
         arr_len = len(numbers)
@@ -69,7 +69,8 @@ class SSP_main:
             dens = arr_len / log(max_elem, 2)
             print("# Dataset density is:\n# {}".format(dens))
         if tot_sum > UINT64_SIZE:
-            sys.exit("Overall array sum is too big, it will overflow")
+            sys.exit("Error: overall input sum should not exceed "
+                     "the uint64_t capacity, got {}".format(tot_sum))
         elif self.requested_sum > tot_sum:
             sys.exit("Requested sum {} > overall sum of the array {}, "
                      "abort".format(self.requested_sum, tot_sum))

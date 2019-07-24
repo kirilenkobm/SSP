@@ -57,6 +57,7 @@ The main part of the software is implemented in both Python and C.
 C code is designed to be compiled as a shared library.
 In turn, Python script is wrapped around the shared library, taking care of argument parsing and verification of input.
 Actually, the compiled library might be simply used individually, apart from the python script.
+The minimal input is a text file with an integer number at each line (might be stdin as well) and an integer, representing the target.
 
 The limitations are:
 
@@ -67,6 +68,10 @@ The limitations are:
 - each input number also should not exceed the uint64_t capacity
 
 - the most regrettable restriction - input array sum also should not exceed the uint64_t capacity due to the algorithm design
+
+- requested sum cannot be smaller than the smallest element of array
+
+- also, the target should not be bigger than he overall sum of input array
 
 Master script SSP.py and C code don't require any external libraries.
 Libraries required to call "generate_input.py" and "perf_tests.ipynb", are listed in the requirements.txt file.
