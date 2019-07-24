@@ -8,7 +8,7 @@ from datetime import datetime as dt
 from math import log
 import ctypes
 import numpy as np
-from src.SSP_lib import SSP_lib
+from src.SSP_lib import SSP_lib  # python replacement
 from src.SSP_lib import accumulate_sum
 
 __author__ = "Bogdan Kirilenko"
@@ -179,7 +179,6 @@ class SSP_main:
             self.__v("# One subset size was specified: {}".format(args.subset_size))
             self.subset_sizes = self.__make_single_size(self.subset_size,
                                                         self.subset_sizes)
-        # !!!temporary python replacement
         solver = SSP_lib(self.in_arr, self.requested_sum)
         for subset_size in self.subset_sizes:
             # print("trying subset size {}".format(subset_size))
