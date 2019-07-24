@@ -10,15 +10,8 @@ kirilenkobm@gmail.com
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdarg.h>
-// later:
-// #include "SSP_lib.h"
+#include "SSP_lib.h"
 #define CHUNK 5
-
-typedef struct
-{
-    uint64_t number;
-    uint64_t quantity;
-} Num_q;
 
 
 // global
@@ -125,7 +118,6 @@ Num_q *_get_zero_num_q(uint64_t elem_num)
     }
     return res;
 }
-
 
 
 void add_to_zero_counter(Num_q *counter, uint64_t *arr, uint64_t arr_size)

@@ -12,29 +12,35 @@ kirilenkobm@gmail.com
 #include <stdint.h>
 #include <stdlib.h>
 
-typedef struct{
-    uint32_t number;
-    uint32_t times;
-} Elem_count;
+typedef struct
+{
+    uint64_t number;
+    uint64_t quantity;
+} Num_q;
+
+void _free_all();
 
 void verbose(const char * restrict format, ...);
 
-uint32_t *accumulate_sum(uint32_t *func, uint32_t f_len);
+uint64_t _elem_search(uint64_t w);
 
-Elem_count *count_elems(uint32_t *arr, uint32_t arr_size, uint32_t *uq);
+uint64_t *accumulate_sum(uint64_t *arr, uint64_t arr_size);
 
-Elem_count *get_zero_path_count(Elem_count *all_available, uint32_t all_size);
+Num_q *count_elements(uint64_t *arr, uint64_t arr_size, uint64_t *q);
 
-uint32_t part_sum(uint32_t *arr,uint32_t n);
+Num_q *_get_zero_num_q(uint64_t elem_num);
 
-uint32_t check_current(uint32_t current, uint32_t cur_index,
-                       Elem_count *path_count, Elem_count *overall_count);
+void add_to_zero_counter(Num_q *counter, uint64_t *arr, uint64_t arr_size);
 
-uint32_t *get_path(Elem_count *counter, uint32_t uniq_num, uint32_t* f_max_a,
-                   uint32_t *f_min_a, uint32_t target, uint32_t comb_size,
-                   uint32_t current_index, bool first, uint32_t f_arr_size);
+uint64_t arr_sum(uint64_t *arr, uint64_t up_to);
 
-uint32_t *solve_SSP(uint32_t *in_arr, uint32_t arr_size, uint32_t sub_size,
-                    uint32_t req_sum, bool _v);
+uint64_t check_current(Num_q *path, uint64_t cur_ind);
+
+uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
+                    uint64_t _cur_val, uint64_t _cur_ind, uint64_t elem_num,
+                    uint64_t req_sum);
+
+uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size, uint64_t sub_size,
+                    uint64_t req_sum, bool _v);
 
 #endif // !SSP_LIB
