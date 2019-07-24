@@ -46,14 +46,25 @@ void verbose(const char * restrict format, ...)
 }
 
 
-
-uint64_t _elem_search(uint64_t w)
+// __int128_t just to avoid overflows, maybe an overkill
+uint64_t _elem_search(__int128_t l, __int128_t r, uint64_t w)
 // very dumb implementation in O(N)
-// rewrite it better
+// rewrite it better in log(N)
 {
-    for (uint64_t i = 0; i < _elem_num_max; i++){
-        if (num_count[i].number == w){return i;}
+    if (r >= l)
+    {
+        __int128_t mid = l + (r - l) / 2;
+        if (num_count[mid].number == w){
+            return mid;
+        } else if (num_count[mid].number < w){
+            return _elem_search(l, mid - 1, w);
+        } else {
+            return _elem_search(mid + 1, r, w);
+        }
     }
+    // for (uint64_t i = 0; i < _elem_num_max; i++){
+    //     if (num_count[i].number == w){return i;}
+    // }
     return _elem_num_max;
 }
 
@@ -125,18 +136,14 @@ void add_to_zero_counter(Num_q *counter, uint64_t *arr, uint64_t arr_size)
 {
     uint64_t counter_ind = 0;
     uint64_t arr_ind = 0;
-    while (arr_ind < arr_size)
+    while (arr_ind < arr_size){
     // both are sorted
-    {
+        assert(arr[arr_ind] <= counter[counter_ind].number);
         if (arr[arr_ind] == counter[counter_ind].number){
             counter[counter_ind].quantity++;
             arr_ind++;
         } else if (arr[arr_ind] < counter[counter_ind].number){
             counter_ind++;
-        } else {
-            // must never happen;
-            printf("IT HAPPENED!");
-            break;
         }
     }
 }
@@ -254,7 +261,7 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
             // we can also check if delta exists
             // if yes -> just add it to answer and return
             {
-                delta_ind = _elem_search((uint64_t)delta);
+                delta_ind = _elem_search(0, (__int128_t)_elem_num_max, (uint64_t)delta);
                 delta_spent = path_count[delta_ind].quantity;
                 delta_avail = num_count[delta_ind].quantity;
                 // if 0 > not found actually
@@ -326,10 +333,11 @@ uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size, uint64_t sub_size,
     {   
         p = p_ - 1;   // if >= then it is an infinite loop
         pointed = first_path[p];
-        pointed_ind = _elem_search(pointed);
+        pointed_ind = _elem_search(0, (__int128_t)_elem_num_max, pointed);
         bool possible = true;
-        // decrease while decreasable
+
         while (possible)
+        // decrease while decreseable  
         {
             lower_ind = pointed_ind + 1;
             lower = num_count[lower_ind].number;

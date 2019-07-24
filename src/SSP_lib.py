@@ -94,12 +94,12 @@ class SSP_lib:
                         path.append(delta)
                         return path
                     # else, delta is spent out
-                # f_max_ = self.__redefine_f_max(f_max_, current)
-                # f_max_a_ = accumulate_sum(f_max_)
-                # if len(f_max_) > points_left + 1:
-                #     # nothing good
-                #     to_return = None if not first else path
-                #     return to_return
+                f_max_ = self.__redefine_f_max(f_max_, current)
+                f_max_a_ = accumulate_sum(f_max_)
+                if len(f_max_) > points_left + 1:
+                    # nothing good
+                    to_return = None if not first else path
+                    return to_return
         if sum(path) != self.req_sum and not first:
             return None
         return path
@@ -115,7 +115,6 @@ class SSP_lib:
         # the worst case
         for pointer in range(subset_size - 2, -1, -1):
             pointed = first_path[pointer]
-            print("Pointed to {}".format(pointed))
             possible = True
             # trying to find path decreasing
             # the pointed value

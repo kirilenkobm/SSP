@@ -22,7 +22,7 @@ void _free_all();
 
 void verbose(const char * restrict format, ...);
 
-uint64_t _elem_search(uint64_t w);
+uint64_t _elem_search(__int128_t l, __int128_t r, uint64_t w);
 
 uint64_t *accumulate_sum(uint64_t *arr, uint64_t arr_size);
 

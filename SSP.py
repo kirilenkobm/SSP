@@ -172,20 +172,17 @@ class SSP_main:
     def solve_ssp(self):
         """Get answer."""
         if self.answer is not None:
-            # already known
+            # answer already found
             return self.answer
         # ok, we actually have to compute this
         if self.subset_size != 0:
             self.__v("# One subset size was specified: {}".format(args.subset_size))
             self.subset_sizes = self.__make_single_size(self.subset_size,
                                                         self.subset_sizes)
-        solver = SSP_lib(self.in_arr, self.requested_sum)
+        # temporary python replacement:
+        # solver = SSP_lib(self.in_arr, self.requested_sum)
         for subset_size in self.subset_sizes:
-            # print("trying subset size {}".format(subset_size))
             answer = self.__call_lib(subset_size)
-            # print("C output is:")
-            # print(_answer)
-            answer = solver.get_answer(subset_size)
             if answer:
                 self.answer = answer
                 break
