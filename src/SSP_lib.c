@@ -26,6 +26,7 @@ bool v = false;
 uint64_t arr_size = 0;
 uint64_t *f_max;
 uint64_t *f_min;
+uint64_t *first_path;
 Num_q *num_count;
 
 
@@ -35,6 +36,7 @@ void _free_all()
     free(f_max);
     free(f_min);
     free(num_count);
+    free(first_path);
 }
 
 
@@ -156,7 +158,7 @@ uint64_t check_current(Num_q *path, uint64_t cur_ind)
     {
         // we cannot use this elem -> this is over
         // if 0 -> all are over, so there is no way
-        return num_count[cur_ind + 1].number;
+        return cur_ind++;
     }
     // we still have this number
     return cur_ind;
@@ -169,7 +171,7 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
 // the core function -> finds a path
 {
     // initiate values
-    uint64_t *path = (uint64_t*)malloc(sub_size * sizeof(uint64_t));
+    uint64_t *path = (uint64_t*)calloc(sub_size + CHUNK, sizeof(uint64_t));
     Num_q *path_count = _get_zero_num_q(elem_num);
     uint64_t pos_left;
     uint64_t path_len = prev_p_len;
@@ -231,8 +233,10 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
             }
             // ok, value passed, let's add it
             passed = true;
+            path[path_len] = cur_val;
+            path_count[cur_ind].quantity++;
+            path_len++;
         }
-
     }
     free(f_max_a);
     free(f_min_a);
@@ -263,10 +267,22 @@ uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size, uint64_t sub_size,
     // now find the first path
     uint64_t cur_ind = 0;
     uint64_t cur_val = num_count[cur_ind].number;
-    uint64_t *first_path = find_path(sub_size, NULL, 0, cur_val, cur_ind, elem_num, req_sum);
-
-    // allocate the result and fill it
     uint64_t *answer = (uint64_t*)calloc(sub_size, sizeof(uint64_t));
+
+    first_path = find_path(sub_size, NULL, 0, cur_val, cur_ind, elem_num, req_sum);
+    // to output the array:
+    // for (uint64_t i = 0; i < sub_size; i++){printf("%llu ", first_path[i]);}
+    // printf("\n");
+
+    uint64_t first_sum = arr_sum(first_path, sub_size);
+    if (first_sum == req_sum)
+    // the first answer is correct -> return it and that's it
+    {
+        for (uint64_t i = 0; i < sub_size; i++){answer[i] = first_path[i];}
+        _free_all();
+        return answer;
+    }
+    // allocate the result and fill it
     _free_all();
     return answer;
 }
