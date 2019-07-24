@@ -4,13 +4,14 @@ Each problem requires a solution.
 
 A formal definition of the subset sum problem is:
 
-```math
 A set of integers S is given
 
 Also given a target X
 
-Find a subset s ∈ S such as \sum_{i=0}^n s_n = X
+Find a subset s ∈ S such as:
 
+```math
+\sum_{i=0}^n s_n = X
 ```
 
 ## Usage
