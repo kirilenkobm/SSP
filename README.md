@@ -1,8 +1,9 @@
 # Subset Sum problem
 
-Each problem requires a solution.
+Each problem requires a solution. And the subset sum problem is not an exception.
+Here, you can find an algorithm that effectively solves this problem.
 
-A formal definition of the subset sum problem is:
+#### A formal definition of the subset sum problem is:
 
 - A set of integers S is given
 
@@ -16,7 +17,7 @@ A formal definition of the subset sum problem is:
 
 ## Usage
 
-On Linux/MacOS:
+#### On Linux/MacOS:
 
 ```shell
 git clone git@gitlab.com:kirilenkobm/ssp.git
@@ -25,7 +26,7 @@ make
 ./SSP.py test_input/3.txt 15
 ```
 
-On Windows:
+#### On Windows:
 
 ```powershell
 git clone git@gitlab.com:kirilenkobm/ssp.git
@@ -42,7 +43,7 @@ Inputs may be generated with generate_input.py
 
 - SSP.py - the main script to solve SSP.
 
-- _test.sh and _test.bat - make shared lib and run SSP.py - just to do it in one command
+- _test.sh and _test.bat - make shared lib and run SSP.py - just in one command
 
 - generate_input.py - script to generate input set, and answers.
 
