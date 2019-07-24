@@ -11,18 +11,20 @@ kirilenkobm@gmail.com
 #include <stdlib.h>
 #include <stdarg.h>
 // later:
-#include "SSP_lib.h"
-#define ALLOC_STEP 10
+// #include "SSP_lib.h"
 #define CHUNK 5
 
 // global
-uint32_t *f_max;
-uint32_t *f_min;
-uint32_t *f_max_acc;
-uint32_t *f_min_acc;
-uint32_t *answer;
-uint32_t *first_path;
 bool v = false;
+uint64_t *f_max;
+uint64_t *f_min;
+
+
+typedef struct
+{
+    uint64_t number;
+    uint64_t quantity;
+} Num_q;
 
 
 void _free_all()
@@ -30,16 +32,13 @@ void _free_all()
 {
     free(f_max);
     free(f_min);
-    free(f_max_acc);
-    free(f_min_acc);
-    free(first_path);
 }
 
 
 void verbose(const char * restrict format, ...)
 // show verbose message if v is activated
 {
-    if(!v){return;}
+    if(!v) {return;}
     va_list args;
     va_start(args, format);
     vprintf(format, args);
@@ -48,211 +47,74 @@ void verbose(const char * restrict format, ...)
 }
 
 
-uint32_t *accumulate_sum(uint32_t *func, uint32_t f_len)
-// create accumulate sum array
+uint64_t *accumulate_sum(uint64_t *arr, uint64_t arr_size)
+// create accumulated sum array
 {
-    uint32_t *res = (uint32_t*)malloc(sizeof(uint32_t) * (f_len + CHUNK));
-    res[0] = func[0];
-    // uint32_t val = func[1];
-    for (uint32_t i = 1; i < f_len; i++){
-        res[i] = res[i - 1] + func[i];
-        // val = res[i + 1];
+    uint64_t *res = (uint64_t*)malloc(arr_size * sizeof(uint64_t));
+    res[0] = arr[0];
+    for (uint64_t i = 1; i < arr_size; i++)
+    {
+        res[i] = res[i - 1] + arr[i];
     }
     return res;
 }
 
 
-Elem_count *count_elems(uint32_t *arr, uint32_t arr_size, uint32_t *uq)
-// count each elem in the array
-// it must be a better solution than allocate a ton of memory
-// an then shrinking it down | but...
+Num_q *count_elements(uint64_t *arr, uint64_t arr_size, uint64_t *q)
+// count elements, create array of structs
 {
-    uint32_t uniq_count = 0;
-    uint32_t cur_val = arr[1];
-    Elem_count *res = (Elem_count*)malloc((arr_size + CHUNK) * sizeof(Elem_count));
-    res[uniq_count].number = cur_val;
-    res[uniq_count].times = 0;
-
+    Num_q *res = (Num_q*)malloc(arr_size * sizeof(Num_q));
+    uint64_t cur_val = arr[1];
+    res[*q].number = cur_val;
+    res[*q].quantity = 0;
     for (uint32_t i = 1; i < arr_size; i++)
+    // go over elements
+    // it is granted that they are arranged as:
+    // x x x x y y y z z
     {   
         if (arr[i] < cur_val){
             // new elem
-            cur_val = arr[i];
-            uniq_count++;
-            res[uniq_count].number = cur_val;
-            res[uniq_count].times = 1;
+            cur_val = arr[i];  // now initiate next value
+            *q = *q + 1;  // cannot do with *q++ by sime reason
+            res[*q].number = cur_val;
+            res[*q].quantity = 1;
         } else {
-            // arr is sorted, the same with arr[i] == cur_val
-            res[uniq_count].times++;
+            // the same value, just increase the quantity
+            res[*q].quantity++;
         }
     }
-    size_t shrinked = sizeof(Elem_count) * (uniq_count + CHUNK);
-    res = (Elem_count*)realloc(res, shrinked);
-    // terminate the sequence
-    res[uniq_count + 1].number = 0;
-    res[uniq_count + 1].times = 0;
-    *uq = uniq_count;
+    // shrink array size
+    size_t shrinked = sizeof(Num_q) * (*q + CHUNK);
+    res = (Num_q*)realloc(res, shrinked);
+    // terminate the sequence with 0
+    *q = *q + 1;
+    res[*q].number = 0;
+    res[*q].quantity = 0;
     return res;
 }
 
 
-Elem_count *get_zero_path_count(Elem_count *all_available, uint32_t all_size)
-// make zero counter
-{   
-    Elem_count *zero = (Elem_count*)malloc(all_size * sizeof(Elem_count));
-    // then copy numbers but not the counts
-    for (uint32_t i = 0; i < all_size; i++){
-        zero[i].number = all_available[i].number;
-        zero[i].times = 0;
-    }
-    return zero;
-}
-
-
-uint32_t part_sum(uint32_t *arr, uint32_t n)
-// sum first n elems of array
-{
-    if (n == 0){return 0;}
-    uint32_t sum = 0;
-    for (uint32_t i = 0; i < n; i++){sum += arr[i];}
-    return sum;
-}
-
-
-uint32_t check_current(uint32_t current, uint32_t cur_index,
-                       Elem_count *path_count, Elem_count *overall_count)
-// check if current value still can be used, decrease it or return 0 otherwise
-// if all possible elements vere spent
-{
-    uint32_t used = path_count[cur_index].times;
-    uint32_t available = overall_count[cur_index].times;
-    assert(available >= used);
-    if (available == used)
-    {
-        // we cannot use this elem -> this is over
-        // if 0 -> all are over, so there is no way
-        return overall_count[cur_index + 1].number;
-    }
-    // we still have this number
-    return current;
-}
-
-
-uint32_t *get_path(Elem_count *counter, uint32_t uniq_num, uint32_t* f_max_a,
-                   uint32_t *f_min_a, uint32_t target, uint32_t comb_size,
-                   uint32_t current_index, bool first, uint32_t f_arr_size)
-{
-    uint32_t *res = (uint32_t*)calloc(comb_size, sizeof(uint32_t));
-    uint32_t current = counter[current_index].number;
-    verbose("Trying to find a path of size %d\n", comb_size);
-    uint32_t current_ = 0;  // I was too lazy for normal output
-    uint32_t intermed_val = 0;  // to keep intermediate sum
-    int64_t delta = 0;  // between target and intermediate val
-    uint32_t left_ = 0;  // intermediate left number
-    uint32_t pos_left = comb_size;
-    uint32_t pos_used = 0;
-    uint32_t prev_sum = 0;
-    uint32_t sup = 0;
-    uint32_t inf = 0;
-    f_max_acc = accumulate_sum(f_max, f_arr_size);
-    f_min_acc = accumulate_sum(f_min, f_arr_size);
-
-    Elem_count *path_count = get_zero_path_count(counter, uniq_num);
-    for (uint32_t i = 0; i < pos_left; i++)
-    // add elems one-by-one
-    {
-        bool passed = false;
-        prev_sum = part_sum(res, pos_used);
-        // printf("i %d prev sum %d\n", i, prev_sum);
-        current_ = check_current(current, current_index,
-                                 path_count, counter);
-        if (current != current_){
-            // change indexes
-            current = current_;
-            current_index++;
-        }
-        while (!passed)
-        // select the suitable number
-        {
-            // if no current value (== 0)
-            // then terminate execution
-            if (current == 0){return res;}
-            intermed_val = prev_sum + current;
-            delta = (int64_t)target - (int64_t)intermed_val;
-            left_ = comb_size - (i + 1);
-            sup = f_max_a[left_];
-            inf = f_min_a[left_];
-            printf("Left %d inf %d del %lld sup %d cur %d\n", left_, inf, delta, sup, current);
-
-            if (delta < 0){
-                current_index++;
-                current = counter[current_index].number;
-                continue;
-            } else if (delta > (int64_t)sup){
-                // how it works?
-                break;
-            } else if (delta < (int64_t)inf){
-                // get next size and repeat
-                current_index++;
-                current = counter[current_index].number;
-                // printf("Switched cur to %d\n", current);
-                continue;
-            }
-            passed = true;
-            res[pos_used] = current;
-            path_count[current_index].times++;
-            pos_used++;
-        }
-    }
-    // just a check for correctness
-    uint32_t act_sum = part_sum(res, pos_used);
-    // maybe assert?
-    // if (act_sum != target){res[0] = 0;}
-    return res;
-}
-
-
-uint32_t *solve_SSP(uint32_t *in_arr, uint32_t arr_size, uint32_t sub_size,
-                    uint32_t req_sum, bool _v)
+uint64_t *solve_SSP(uint64_t *in_arr, uint64_t arr_size, uint64_t sub_size,
+                    uint64_t req_sum, bool _v)
 // what we should call
 {
-    // just write sub_size -by- sub_size
-    size_t f_max_min_size = sizeof(uint32_t) * (arr_size + CHUNK);
-    f_max = (uint32_t*)malloc(f_max_min_size);
-    f_min = (uint32_t*)malloc(f_max_min_size);
-    v = _v;  // maybe there's a better solution
-
-    // the numbers are actually pre-sorted
-    // just for explicity
+    // allocate f_max and f_min
+    size_t f_max_min_size = sizeof(uint64_t) * (arr_size + CHUNK);
+    // the numbers were actually pre-sorted, so f_min is defined just for explicity
+    f_max = (uint64_t*)malloc(f_max_min_size);
+    f_min = (uint64_t*)malloc(f_max_min_size);
     f_max[0] = 0;
     f_min[0] = 0;
-    for (uint32_t i = 0; i < arr_size; i++){f_min[i + 1] = in_arr[i];}
-    // f_max is just reversed f_min
-    for (uint32_t i = 1, j = arr_size; i < arr_size + 1; i++, j--){
-        f_max[j] = f_min[i];}
-    arr_size++;
-    // not get accumulated sums
-    // f_max_acc = accumulate_sum_s_z(f_max, arr_size);
-    // f_min_acc = accumulate_sum_s_z(f_min, arr_size);
-
-    uint32_t uniq_num = 0;
-    // count elems | there must be a better solution
-    Elem_count *elem_counted = count_elems(f_max, arr_size, &uniq_num);
-    verbose("# Found %d unique elems\n", uniq_num);
-    // find first path -> pathfinder with first parameter
-    answer = (uint32_t*)calloc((sub_size + 1), sizeof(uint32_t));
-    uint32_t *first_path = get_path(elem_counted, uniq_num, f_max, f_min,
-                                    req_sum, sub_size, 0, true, arr_size);
-    uint32_t f_path_sum = part_sum(first_path, sub_size);
-    printf("Sum : %d req %d\n", f_path_sum, req_sum);
-    if (f_path_sum == req_sum){
-        for (uint32_t i = 0; i < sub_size; i++){answer[i] = first_path[i];}
-        _free_all();
-        return answer;
-    }
-    // compare sun with the actual one
-    // if equal -> return it
-    // if not -> continue working with it
+    for (uint64_t i = 0; i < arr_size; i++){f_min[i + 1] = in_arr[i];}
+    for (uint64_t i = 1, j = arr_size; i < arr_size + 1; i++, j--){f_max[j] = f_min[i];}
+    arr_size++;  // arrays were started from 0, so size +1
+    v = _v;  // maybe there's a better solution to implement verbosity
+    // now count the elements
+    uint64_t elem_num = 0;
+    Num_q *num_count = count_elements(f_max, arr_size, &elem_num);
+    printf("Found %llu uniq elems\n", elem_num);
+    // allocate the result and fill it
+    uint64_t *answer = (uint64_t*)calloc(sub_size, sizeof(uint64_t));
     _free_all();
     return answer;
 }
