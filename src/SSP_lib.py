@@ -2,6 +2,7 @@
 """Python implementation.
 
 Temporary replacement.
+IS DEPRECATED.
 To be rewritten in C.
 """
 from collections import Counter

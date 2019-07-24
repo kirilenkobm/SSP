@@ -7,9 +7,8 @@ import platform
 from datetime import datetime as dt
 from math import log
 import ctypes
-import numpy as np
-from src.SSP_lib import SSP_lib  # python replacement
-from src.SSP_lib import accumulate_sum
+# from src.SSP_lib import SSP_lib  # python replacement
+# from src.SSP_lib import accumulate_sum
 
 __author__ = "Bogdan Kirilenko"
 __email__ = "kirilenkobm@gmail.com"
@@ -176,7 +175,7 @@ class SSP_main:
             return self.answer
         # ok, we actually have to compute this
         if self.subset_size != 0:
-            self.__v("# One subset size was specified: {}".format(args.subset_size))
+            self.__v("# Required subset size was specified: {}".format(args.subset_size))
             self.subset_sizes = self.__make_single_size(self.subset_size,
                                                         self.subset_sizes)
         # temporary python replacement:
@@ -207,6 +206,16 @@ def parse_args():
     if args.requested_sum < 0:
         sys.exit("Requested sum cannot be negative")
     return args
+
+
+def accumulate_sum(lst):
+    """Return accumulated sum list."""
+    if len(lst) == 1:
+        return lst
+    accumulated_sum = [lst[0]]
+    for i in range(1, len(lst)):
+        accumulated_sum.append(accumulated_sum[i - 1] + lst[i])
+    return accumulated_sum
 
 
 def main(input_file, requested_sum, subset_size, v, d):

@@ -1,11 +1,11 @@
 # Subset Sum problem
 
 Each problem requires a solution. And the subset sum problem is not an exception.
-Here, you can find an algorithm that effectively solves this problem.
+Here, you can find an algorithm that effectively solves this problem in natural numbers.
 
-#### A formal definition of the subset sum problem is:
+## A formal definition of the subset sum problem
 
-- A set of integers S is given
+- A set of positive integers S is given
 
 - Also given a target X
 
@@ -17,7 +17,7 @@ Here, you can find an algorithm that effectively solves this problem.
 
 ## Usage
 
-#### On Linux/MacOS:
+### On Linux/MacOS
 
 ```shell
 git clone git@gitlab.com:kirilenkobm/ssp.git
@@ -26,7 +26,7 @@ make
 ./SSP.py test_input/3.txt 15
 ```
 
-#### On Windows:
+### On Windows
 
 ```powershell
 git clone git@gitlab.com:kirilenkobm/ssp.git
@@ -50,6 +50,26 @@ Inputs may be generated with generate_input.py
 - create_test_set.sh - a wrapper around generate_input.py
 
 - perf_tests.ipynb - notebook containing performance and precision tests
+
+## Implementation details and limitations
+
+The main part of the software is implemented in both Python and C.
+C code is designed to be compiled as a shared library.
+In turn, Python script is wrapped around the shared library, taking care of argument parsing and verification of input.
+Actually, the compiled library might be simply used individually, apart from the python script.
+
+The limitations are:
+
+- all input numbers must be positive integers, zeros are allowed but don't make any sense in the context of problem
+
+- number of input elements should not exceed the uint64_t maximal capacity (which is equal to 18446744073709551615)
+
+- each input number also should not exceed the uint64_t capacity
+
+- the most regrettable restriction - input array sum also should not exceed the uint64_t capacity due to the algorithm design
+
+Master script SSP.py and C code don't require any external libraries.
+Libraries required to call "generate_input.py" and "perf_tests.ipynb", are listed in the requirements.txt file.
 
 ## Explanation
 
