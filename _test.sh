@@ -17,7 +17,7 @@ TEST_3=test_input/3.txt
 SSP=./SSP.py
 echo "### TEST_1 10"
 echo "### Must return [7, 3]"
-$SSP $TEST_1 10
+$SSP $TEST_1 12
 if [[ $? -ne 0 ]]; then
     echo "Test 1 failed"
     exit
@@ -27,7 +27,7 @@ fi
 
 echo "### TEST_2 10 with -s == 4"
 echo "### Must return [5, 3, 1, 1]"
-$SSP $TEST_1 10 -s 4
+$SSP $TEST_1 12 -s 4
 if [[ $? -ne 0 ]]; then
     echo "Test 2 failed"
     exit

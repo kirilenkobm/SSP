@@ -10,6 +10,7 @@ kirilenkobm@gmail.com
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdarg.h>
+// later:
 #include "SSP_lib.h"
 #define ALLOC_STEP 10
 #define CHUNK 5
@@ -20,7 +21,19 @@ uint32_t *f_min;
 uint32_t *f_max_acc;
 uint32_t *f_min_acc;
 uint32_t *answer;
+uint32_t *first_path;
 bool v = false;
+
+
+void _free_all()
+// free all allocated stuff
+{
+    free(f_max);
+    free(f_min);
+    free(f_max_acc);
+    free(f_min_acc);
+    free(first_path);
+}
 
 
 void verbose(const char * restrict format, ...)
@@ -35,32 +48,32 @@ void verbose(const char * restrict format, ...)
 }
 
 
-uint32_t *accumulate_sum_s_z(uint32_t *func, uint32_t f_len)
+uint32_t *accumulate_sum(uint32_t *func, uint32_t f_len)
 // create accumulate sum array
 {
     uint32_t *res = (uint32_t*)malloc(sizeof(uint32_t) * (f_len + CHUNK));
-    res[0] = 0;
-    uint32_t val = 0;
-    for (uint32_t i = 0; i < f_len; i++){
-        res[i + 1] = val + func[i];
-        val = res[i + 1];
+    res[0] = func[0];
+    // uint32_t val = func[1];
+    for (uint32_t i = 1; i < f_len; i++){
+        res[i] = res[i - 1] + func[i];
+        // val = res[i + 1];
     }
     return res;
 }
 
 
-Elem_count *count_elems(uint32_t *arr, uint32_t arr_size)
+Elem_count *count_elems(uint32_t *arr, uint32_t arr_size, uint32_t *uq)
 // count each elem in the array
 // it must be a better solution than allocate a ton of memory
 // an then shrinking it down | but...
 {
     uint32_t uniq_count = 0;
-    uint32_t cur_val = arr[0];
-    Elem_count *res = (Elem_count*)malloc(arr_size * sizeof(Elem_count));
+    uint32_t cur_val = arr[1];
+    Elem_count *res = (Elem_count*)malloc((arr_size + CHUNK) * sizeof(Elem_count));
     res[uniq_count].number = cur_val;
     res[uniq_count].times = 0;
 
-    for (uint32_t i = 0; i < arr_size; i++)
+    for (uint32_t i = 1; i < arr_size; i++)
     {   
         if (arr[i] < cur_val){
             // new elem
@@ -78,6 +91,7 @@ Elem_count *count_elems(uint32_t *arr, uint32_t arr_size)
     // terminate the sequence
     res[uniq_count + 1].number = 0;
     res[uniq_count + 1].times = 0;
+    *uq = uniq_count;
     return res;
 }
 
@@ -124,9 +138,9 @@ uint32_t check_current(uint32_t current, uint32_t cur_index,
 }
 
 
-uint32_t *get_first_path(Elem_count *counter, uint32_t uniq_num, uint32_t* f_max_a,
-                         uint32_t *f_min_a, uint32_t target, uint32_t comb_size,
-                         uint32_t current_index, bool first)
+uint32_t *get_path(Elem_count *counter, uint32_t uniq_num, uint32_t* f_max_a,
+                   uint32_t *f_min_a, uint32_t target, uint32_t comb_size,
+                   uint32_t current_index, bool first, uint32_t f_arr_size)
 {
     uint32_t *res = (uint32_t*)calloc(comb_size, sizeof(uint32_t));
     uint32_t current = counter[current_index].number;
@@ -140,6 +154,9 @@ uint32_t *get_first_path(Elem_count *counter, uint32_t uniq_num, uint32_t* f_max
     uint32_t prev_sum = 0;
     uint32_t sup = 0;
     uint32_t inf = 0;
+    f_max_acc = accumulate_sum(f_max, f_arr_size);
+    f_min_acc = accumulate_sum(f_min, f_arr_size);
+
     Elem_count *path_count = get_zero_path_count(counter, uniq_num);
     for (uint32_t i = 0; i < pos_left; i++)
     // add elems one-by-one
@@ -165,6 +182,7 @@ uint32_t *get_first_path(Elem_count *counter, uint32_t uniq_num, uint32_t* f_max
             left_ = comb_size - (i + 1);
             sup = f_max_a[left_];
             inf = f_min_a[left_];
+            printf("Left %d inf %d del %lld sup %d cur %d\n", left_, inf, delta, sup, current);
 
             if (delta < 0){
                 current_index++;
@@ -189,18 +207,8 @@ uint32_t *get_first_path(Elem_count *counter, uint32_t uniq_num, uint32_t* f_max
     // just a check for correctness
     uint32_t act_sum = part_sum(res, pos_used);
     // maybe assert?
-    if (act_sum != target){res[0] = 0;}
+    // if (act_sum != target){res[0] = 0;}
     return res;
-}
-
-
-void _free_all()
-// free all allocated stuff
-{
-    free(f_max);
-    free(f_min);
-    free(f_max_acc);
-    free(f_min_acc);
 }
 
 
@@ -216,24 +224,32 @@ uint32_t *solve_SSP(uint32_t *in_arr, uint32_t arr_size, uint32_t sub_size,
 
     // the numbers are actually pre-sorted
     // just for explicity
-    for (uint32_t i = 0; i < arr_size; i++){f_min[i] = in_arr[i];}
+    f_max[0] = 0;
+    f_min[0] = 0;
+    for (uint32_t i = 0; i < arr_size; i++){f_min[i + 1] = in_arr[i];}
     // f_max is just reversed f_min
-    for (uint32_t i = 0, j = arr_size - 1; i < arr_size; i++, j--){
+    for (uint32_t i = 1, j = arr_size; i < arr_size + 1; i++, j--){
         f_max[j] = f_min[i];}
+    arr_size++;
     // not get accumulated sums
-    f_max_acc = accumulate_sum_s_z(f_max, arr_size);
-    f_min_acc = accumulate_sum_s_z(f_min, arr_size);
+    // f_max_acc = accumulate_sum_s_z(f_max, arr_size);
+    // f_min_acc = accumulate_sum_s_z(f_min, arr_size);
 
-    // count elems | there must be a better solution
-    Elem_count *elem_counted = count_elems(f_max, arr_size);
     uint32_t uniq_num = 0;
-    for (uint32_t i = 0; i < arr_size; i++){
-        // if we reached zero -> the array is over
-        if (elem_counted[i].number == 0){break;}
-        uniq_num++;
-    }
+    // count elems | there must be a better solution
+    Elem_count *elem_counted = count_elems(f_max, arr_size, &uniq_num);
     verbose("# Found %d unique elems\n", uniq_num);
     // find first path -> pathfinder with first parameter
+    answer = (uint32_t*)calloc((sub_size + 1), sizeof(uint32_t));
+    uint32_t *first_path = get_path(elem_counted, uniq_num, f_max, f_min,
+                                    req_sum, sub_size, 0, true, arr_size);
+    uint32_t f_path_sum = part_sum(first_path, sub_size);
+    printf("Sum : %d req %d\n", f_path_sum, req_sum);
+    if (f_path_sum == req_sum){
+        for (uint32_t i = 0; i < sub_size; i++){answer[i] = first_path[i];}
+        _free_all();
+        return answer;
+    }
     // compare sun with the actual one
     // if equal -> return it
     // if not -> continue working with it

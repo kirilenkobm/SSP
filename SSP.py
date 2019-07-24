@@ -5,9 +5,9 @@ import sys
 import os
 import platform
 from datetime import datetime as dt
-import numpy as np
-from numpy.ctypeslib import ndpointer
+from math import log
 import ctypes
+import numpy as np
 from src.SSP_lib import SSP_lib
 from src.SSP_lib import accumulate_sum
 
@@ -22,11 +22,12 @@ UINT32_SIZE = 4294967295
 
 class SSP_main:
     """Subset Sum Problem Solver."""
-    def __init__(self, in_file, req_sum, subset_size=0, v=False):
+    def __init__(self, in_file, req_sum, subset_size=0, v=False, d=False):
         """Initiate the class."""
         self.in_file = in_file
         self.requested_sum = req_sum
         self._verbose = v
+        self._get_d = d
         self.subset_size = subset_size
         self.answer = None
         self.__make_input_arr()
@@ -60,7 +61,14 @@ class SSP_main:
                     " to uint32_t max size")
         # ACTUALLY A PROBLEM
         tot_sum = sum(numbers)
+        arr_len = len(numbers)
         min_elem = min(numbers)
+        max_elem = max(numbers)
+
+        if self._get_d:
+            # we were reqested to print dataset density
+            dens = arr_len / log(max_elem, 2)
+            print("# Dataset density is:\n# {}".format(dens))
         if tot_sum > UINT32_SIZE:
             sys.exit("Overall array sum is too big, it will overflow")
         elif self.requested_sum > tot_sum:
@@ -189,6 +197,8 @@ def parse_args():
     app.add_argument("requested_sum", type=int, help="Sum requested")
     app.add_argument("--subset_size", "-s", type=int, default=0,
                      help="Specify particular size of subset, look only for this")
+    app.add_argument("--get_density", "-d", action="store_true", dest="get_density",
+                     help="Compute dataset density")
     app.add_argument("--verbose", "-v", action="store_true", dest="verbose",
                      help="Shpw verbose messages.")
     if len(sys.argv) < 3:
@@ -200,9 +210,9 @@ def parse_args():
     return args
 
 
-def main(input_file, requested_sum, subset_size, v):
+def main(input_file, requested_sum, subset_size, v, d):
     """Entry point."""
-    ssp = SSP_main(input_file, requested_sum, subset_size, v)
+    ssp = SSP_main(input_file, requested_sum, subset_size, v, d)
     answer = ssp.solve_ssp()
     ans_str = str(sorted(answer, reverse=True)) if answer else "None"
     print("The answer is:\n{}".format(ans_str))
@@ -211,4 +221,5 @@ def main(input_file, requested_sum, subset_size, v):
 if __name__ == "__main__":
     args = parse_args()
     main(args.input, args.requested_sum,
-         args.subset_size, args.verbose)
+         args.subset_size, args.verbose,
+         args.get_density)
