@@ -26,6 +26,7 @@ bool v = false;
 uint64_t arr_size = 0;
 uint64_t *f_max;
 uint64_t *f_min;
+uint64_t _f_arr_size;
 uint64_t *first_path;
 Num_q *num_count;
 uint64_t _elem_num_max;
@@ -170,7 +171,8 @@ uint64_t check_current(Num_q *path, uint64_t cur_ind)
     {
         // we cannot use this elem -> this is over
         // if 0 -> all are over, so there is no way
-        return cur_ind++;
+        cur_ind++;
+        return cur_ind;
     }
     // we still have this number
     return cur_ind;
@@ -198,9 +200,12 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
         add_to_zero_counter(path_count, prev_path, prev_p_len);
     } else {pos_left = sub_size;}
 
+
     // create local f_max and f_min
     uint64_t *f_max_a = accumulate_sum(f_max, arr_size);
     uint64_t *f_min_a = accumulate_sum(f_min, arr_size);
+    uint64_t *_f_max = (uint64_t*)malloc(_f_arr_size * sizeof(uint64_t));
+    for (uint64_t i = 0; i < _f_arr_size; i++){_f_max[i] = f_max[i];}
     // values I need insude
     uint64_t intermed_val = 0;
     uint64_t prev_sum = 0;
@@ -208,6 +213,10 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
     uint64_t sup = 0;
     uint64_t inf = 0;
     uint64_t points_left = 0;
+    
+    uint64_t delta_ind;
+    uint64_t delta_spent;
+    uint64_t delta_avail;
 
     for (uint64_t i = 0; i < pos_left; i++)
     // the main loop, trying to add the next element
@@ -253,9 +262,9 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
             // we can also check if delta exists
             // if yes -> just add it to answer and return
             {
-                uint64_t delta_ind = _elem_search((uint64_t)delta);
-                uint64_t delta_spent = path_count[delta_ind].quantity;
-                uint64_t delta_avail = num_count[delta_ind].quantity;
+                delta_ind = _elem_search((uint64_t)delta);
+                delta_spent = path_count[delta_ind].quantity;
+                delta_avail = num_count[delta_ind].quantity;
                 // if 0 > not found actually
                 // but I don't like conglomeration of if's
                 if ((delta_avail > 0) && (delta_spent < delta_avail))
@@ -267,7 +276,6 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
                     return path;
                 }
             }
-
         }
     }
     free(f_max_a);
@@ -315,7 +323,46 @@ uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size, uint64_t sub_size,
         _free_all();
         return answer;
     }
-    // allocate the result and fill it
+    // we're here -> where the problems start
+    uint64_t p = 0;
+    uint64_t pointed;
+    uint64_t pointed_ind;
+    uint64_t lower;
+    uint64_t lower_ind;
+
+    for (uint64_t p_ = (sub_size - 1); p_ > 0; p_--)
+    {   
+        p = p_ - 1;   // if >= then it is an infinite loop
+        pointed = first_path[p];
+        pointed_ind = _elem_search(pointed);
+        bool possible = true;
+        // decrease while decreasable
+        while (possible)
+        {
+            lower_ind = pointed_ind + 1;
+            lower = num_count[lower_ind].number;
+            if (lower == 0){possible = false; break;}
+            uint64_t *try_path = (uint64_t*)calloc(sub_size + CHUNK, sizeof(uint64_t));
+            for (uint64_t i = 0; i < p; i++){try_path[i] = first_path[i];}
+            try_path[p] = lower;
+            // try to get this path
+            uint64_t *try_res = find_path(sub_size, try_path, p + 1, lower,
+                                          lower_ind, elem_num, req_sum);
+            pointed = lower;
+            pointed_ind = lower_ind;
+            // do not forget!
+            free(try_path);
+            uint64_t try_res_sum = arr_sum(try_res, sub_size);
+            if (try_res_sum == req_sum)
+            // we've got an answer!
+            {
+                for (uint64_t i = 0; i < sub_size; i++){answer[i] = try_res[i];}
+                _free_all();
+                free(try_res);
+                return answer;
+            }
+        }
+    }
     _free_all();
     return answer;
 }

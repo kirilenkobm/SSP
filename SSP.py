@@ -182,9 +182,10 @@ class SSP_main:
         # !!!temporary python replacement
         solver = SSP_lib(self.in_arr, self.requested_sum)
         for subset_size in self.subset_sizes:
-            _answer = self.__call_lib(subset_size)
-            print("C output is:")
-            print(_answer)
+            # print("trying subset size {}".format(subset_size))
+            answer = self.__call_lib(subset_size)
+            # print("C output is:")
+            # print(_answer)
             answer = solver.get_answer(subset_size)
             if answer:
                 self.answer = answer
