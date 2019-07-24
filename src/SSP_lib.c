@@ -24,8 +24,9 @@ uint64_t *first_path;
 Num_q *num_count;
 uint64_t _elem_num_max;
 
-void _free_all()
+
 // free all allocated stuff
+void _free_all()
 {
     free(f_max);
     free(f_min);
@@ -69,8 +70,8 @@ uint64_t _elem_search(__int128_t l, __int128_t r, uint64_t w)
 }
 
 
-uint64_t *accumulate_sum(uint64_t *arr, uint64_t arr_size)
 // create accumulated sum array
+uint64_t *accumulate_sum(uint64_t *arr, uint64_t arr_size)
 {
     uint64_t *res = (uint64_t*)malloc(arr_size * sizeof(uint64_t));
     res[0] = arr[0];
@@ -82,8 +83,8 @@ uint64_t *accumulate_sum(uint64_t *arr, uint64_t arr_size)
 }
 
 
-Num_q *count_elements(uint64_t *arr, uint64_t arr_size, uint64_t *q)
 // count elements, create array of structs
+Num_q *count_elements(uint64_t *arr, uint64_t arr_size, uint64_t *q)
 {
     Num_q *res = (Num_q*)malloc(arr_size * sizeof(Num_q));
     // the first element is 0 -> skip it
@@ -118,8 +119,8 @@ Num_q *count_elements(uint64_t *arr, uint64_t arr_size, uint64_t *q)
 }
 
 
-Num_q *_get_zero_num_q(uint64_t elem_num)
 // create empty counter
+Num_q *_get_zero_num_q(uint64_t elem_num)
 {
     Num_q *res = (Num_q*)malloc(elem_num * sizeof(Num_q));
     for (uint64_t i = 0; i < elem_num; i++)
@@ -296,6 +297,7 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
                 if ((delta_avail > 0) && (delta_spent < delta_avail))
                 // yes, it is available
                 {
+                    verbose("Delta %lld is in the dataset\n", delta);
                     path[path_len] = delta;
                     free(f_max_a);
                     free(f_min_a);
@@ -312,6 +314,7 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
             // horrible case
             // in this case the sum is really unreachable
             {
+                verbose("# Too many positions left to continue\n");
                 free(f_max_a);
                 free(f_min_a);
                 free(_f_max);
@@ -346,6 +349,7 @@ uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size, uint64_t sub_size,
     uint64_t elem_num = 0;
     num_count = count_elements(f_max, arr_size, &elem_num);
     _elem_num_max = elem_num;
+    verbose("# %llu unique numbers in the dataset\n", _elem_num_max);
 
     // now find the first path
     uint64_t cur_ind = 0;
@@ -360,12 +364,15 @@ uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size, uint64_t sub_size,
     uint64_t first_sum = arr_sum(first_path, sub_size);
     if (first_sum == req_sum)
     // the first answer is correct -> return it and that's it
-    {
+    {   
+        verbose("# The first path is the answer\n");
         for (uint64_t i = 0; i < sub_size; i++){answer[i] = first_path[i];}
         _free_all();
         return answer;
     }
     // we're here -> where the problems start
+    verbose("# The first subset is wrong\n");
+    verbose("# Trying different starting points...\n");
     uint64_t p = 0;
     uint64_t pointed;
     uint64_t pointed_ind;
@@ -375,6 +382,7 @@ uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size, uint64_t sub_size,
     for (uint64_t p_ = (sub_size - 1); p_ > 0; p_--)
     {   
         p = p_ - 1;   // if >= then it is an infinite loop
+        verbose("# Starting with position %llu\n", p);
         pointed = first_path[p];
         pointed_ind = _elem_search(0, (__int128_t)_elem_num_max, pointed);
         bool possible = true;
@@ -384,6 +392,7 @@ uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size, uint64_t sub_size,
         {
             lower_ind = pointed_ind + 1;
             lower = num_count[lower_ind].number;
+            verbose("# Changing %llu at pos. %llu to %llu\n", pointed, p, lower);
             if (lower == 0){possible = false; break;}
             uint64_t *try_path = (uint64_t*)calloc(sub_size + CHUNK, sizeof(uint64_t));
             for (uint64_t i = 0; i < p; i++){try_path[i] = first_path[i];}
@@ -399,6 +408,7 @@ uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size, uint64_t sub_size,
             if (try_res_sum == req_sum)
             // we've got an answer!
             {
+                verbose("# Found answer\n");
                 for (uint64_t i = 0; i < sub_size; i++){answer[i] = try_res[i];}
                 _free_all();
                 free(try_res);
