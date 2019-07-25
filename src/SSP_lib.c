@@ -25,6 +25,16 @@ Num_q *num_count;
 uint64_t _elem_num_max;
 
 
+// keyboard interrupt handler
+void sigint_handler(int sig_num)
+{
+    // actually doesn't work
+    // but probably it's a right direction
+    fprintf(stderr, "KeyboardInterrupt.");
+    abort();
+}
+
+
 // free all allocated stuff
 void _free_all()
 {
@@ -230,6 +240,7 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
     // create local f_max and f_min
     uint64_t *f_max_a = accumulate_sum(f_max, arr_size);
     uint64_t *f_min_a = accumulate_sum(f_min, arr_size);
+    verbose("# Created fmin and fmax\n");
     uint64_t *_f_max = (uint64_t*)malloc(_l_f_arr_size * sizeof(uint64_t));
     for (uint64_t i = 0; i < _l_f_arr_size; i++){_f_max[i] = f_max[i];}
     // values I need insude
@@ -246,7 +257,8 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
 
     for (uint64_t i = 0; i < pos_left; i++)
     // the main loop, trying to add the next element
-    {
+    {   
+        verbose("Position %llu out of %llu in progress..\r", i, pos_left);
         bool passed = false;
         prev_sum = arr_sum(path, path_len);
         cur_ind = check_current(path_count, cur_ind);
@@ -334,6 +346,8 @@ uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size, uint64_t sub_size,
 // what we should call
 {
     // allocate f_max and f_min
+    signal(SIGINT, sigint_handler);
+    verbose("Entered shared library.\n");
     arr_size = _arr_size;
     size_t f_max_min_size = sizeof(uint64_t) * (arr_size + CHUNK);
     // the numbers were actually pre-sorted, so f_min is defined just for explicity

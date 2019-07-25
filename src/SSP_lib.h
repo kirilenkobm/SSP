@@ -18,6 +18,8 @@ typedef struct
     uint64_t quantity;
 } Num_q;
 
+void sigint_handler(int sig_num);
+
 void _free_all();
 
 void verbose(const char * restrict format, ...);
