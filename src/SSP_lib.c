@@ -45,8 +45,8 @@ void _free_all()
 }
 
 
-void verbose(const char * restrict format, ...)
 // show verbose message if v is activated
+void verbose(const char * restrict format, ...)
 {
     if(!v) {return;}
     va_list args;
@@ -73,9 +73,6 @@ uint64_t _elem_search(__int128_t l, __int128_t r, uint64_t w)
             return _elem_search(mid + 1, r, w);
         }
     }
-    // for (uint64_t i = 0; i < _elem_num_max; i++){
-    //     if (num_count[i].number == w){return i;}
-    // }
     return _elem_num_max;
 }
 
@@ -142,8 +139,8 @@ Num_q *_get_zero_num_q(uint64_t elem_num)
 }
 
 
-void add_to_zero_counter(Num_q *counter, uint64_t *arr, uint64_t arr_size)
 // add elements to the counter
+void add_to_zero_counter(Num_q *counter, uint64_t *arr, uint64_t arr_size)
 {
     uint64_t counter_ind = 0;
     uint64_t arr_ind = 0;
@@ -160,8 +157,8 @@ void add_to_zero_counter(Num_q *counter, uint64_t *arr, uint64_t arr_size)
 }
 
 
+// compute array sum
 uint64_t arr_sum(uint64_t *arr, uint64_t up_to)
-// return array sum
 {
     if (up_to == 0){return 0;}
     uint64_t res = 0;
@@ -170,9 +167,8 @@ uint64_t arr_sum(uint64_t *arr, uint64_t up_to)
 }
 
 
+// check if current value still can be used
 uint64_t check_current(Num_q *path, uint64_t cur_ind)
-// check if current value still can be used, decrease it or return 0 otherwise
-// if all possible elements vere spent
 {
     uint64_t used = path[cur_ind].quantity;
     uint64_t available = num_count[cur_ind].quantity;
@@ -214,10 +210,10 @@ void redefine_f_max(uint64_t *_f_max, uint64_t *_f_arr_len, uint64_t cur_val)
 }
 
 
+// the core function -> finds a path
 uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
                     uint64_t _cur_val, uint64_t _cur_ind, uint64_t elem_num,
                     uint64_t req_sum)
-// the core function -> finds a path
 {
     // initiate values
     uint64_t *path = (uint64_t*)calloc(sub_size + CHUNK, sizeof(uint64_t));
@@ -236,15 +232,14 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
         add_to_zero_counter(path_count, prev_path, prev_p_len);
     } else {pos_left = sub_size;}
 
-
     // create local f_max and f_min
     uint64_t *f_max_a = accumulate_sum(f_max, arr_size);
     uint64_t *f_min_a = accumulate_sum(f_min, arr_size);
     verbose("# Created fmin and fmax\n");
     uint64_t *_f_max = (uint64_t*)malloc(_l_f_arr_size * sizeof(uint64_t));
     for (uint64_t i = 0; i < _l_f_arr_size; i++){_f_max[i] = f_max[i];}
+
     // values I need insude
-    uint64_t intermed_val = 0;
     uint64_t prev_sum = 0;
     int64_t delta = 0;  // might be negative!
     uint64_t sup = 0;
@@ -255,8 +250,8 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
     uint64_t delta_spent;
     uint64_t delta_avail;
 
-    for (uint64_t i = 0; i < pos_left; i++)
     // the main loop, trying to add the next element
+    for (uint64_t i = 0; i < pos_left; i++)
     {   
         verbose("Position %llu out of %llu in progress..\r", i, pos_left);
         bool passed = false;
@@ -264,8 +259,8 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
         cur_ind = check_current(path_count, cur_ind);
         cur_val = num_count[cur_ind].number;
 
-        while (!passed)
         // trying to add the current value
+        while (!passed)
         {
             // no values left
             if (cur_val == 0){
@@ -275,8 +270,7 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
                 return path;
             }
             // get intermediate values
-            intermed_val = prev_sum + cur_val;
-            delta = req_sum - intermed_val;
+            delta = req_sum - (prev_sum + cur_val);
             points_left = pos_left - (i + 1);
             sup = f_max_a[points_left];
             inf = f_min_a[points_left];
@@ -318,9 +312,10 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
             }
             // carefully redefine _f_max here
             // and then redefine f_max_accumulated
-            redefine_f_max(_f_max, &_l_f_arr_size, cur_val);
-            free(f_max_a);
-            f_max_a = accumulate_sum(_f_max, _l_f_arr_size);
+            // necessary to check if it really makes any sense
+            // redefine_f_max(_f_max, &_l_f_arr_size, cur_val);
+            // free(f_max_a);
+            // f_max_a = accumulate_sum(_f_max, _l_f_arr_size);
             // check that new array size still fits
             if (points_left > _l_f_arr_size)
             // horrible case
@@ -341,9 +336,9 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
 }
 
 
+// shared library entry point
 uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size, uint64_t sub_size,
                     uint64_t req_sum, bool _v)
-// what we should call
 {
     // allocate f_max and f_min
     signal(SIGINT, sigint_handler);

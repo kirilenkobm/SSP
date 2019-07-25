@@ -132,15 +132,16 @@ class SSP_wrapper:
         self.c_v = ctypes.c_bool(self._verbose)
         self.lib.solve_SSP.restype = ctypes.POINTER(ctypes.c_uint64)
 
-    @staticmethod
-    def __make_single_size(req, available):
+    def __make_single_subset_size(self):
         """Check if requested subset length is possible."""
-        if req < available[0] or req > available[-1]:
-            print("# Impossible to find combination of length {}".format(req))
+        if self.subset_size < self.subset_sizes[0] \
+            or self.subset_size > self.subset_sizes[-1]:
+            print("# Impossible to find combination of length {}" \
+                "".format(self.subset_size))
             print("# Please use one of these for this input:")
-            print(str(available))
+            print(str(self.subset_sizes))
             sys.exit("Abort")
-        return [req]
+        self.subset_sizes = [self.subset_size]
 
     def __call_lib(self, subset_size):
         """Call lib with the parameters given."""
@@ -172,10 +173,9 @@ class SSP_wrapper:
         # ok, we actually have to compute this
         if self.subset_size != 0:  # check if the requested length is valid
             self.__v("# Subset size was specified: {}".format(args.subset_size))
-            self.subset_sizes = self.__make_single_size(self.subset_size,
-                                                        self.subset_sizes)
+            self.__make_single_subset_size()
+        # call for different subset sizes until we get the answer
         for subset_size in self.subset_sizes:
-            # call for different subset sizes until we get the answer
             answer = self.__call_lib(subset_size)
             if answer:  # stop, it's enough
                 self.answer = answer

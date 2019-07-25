@@ -33,6 +33,9 @@ def parse_args():
     app.add_argument("std_scale", type=int)
     app.add_argument("samples", type=int, help="Num of samples")
     app.add_argument("name_templ", help="Template for output filename")
+    if len(sys.argv) < 5:
+        app.print_help()
+        sys.exit()
     args = app.parse_args()
     if args.N < N_min or args.N > N_max:
         sys.exit("Error: N is out of [{} {}]".format(N_min, N_max))
@@ -47,6 +50,7 @@ def main():
     """Entry point."""
     args = parse_args()
     for s in range(args.samples):
+        # TODO: also try uniform distribution, make an option
         rnd_sample = np.random.normal(scale=args.std_scale, size=args.N)
         rnd_sample_int = [int(x) + 1 for x in abs(np.round(rnd_sample))]
         sum_forms = sorted(rnd_sample_int[:args.n], reverse=True)
