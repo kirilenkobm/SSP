@@ -7,6 +7,8 @@ import platform
 from datetime import datetime as dt
 from math import log
 import ctypes
+# from py_replacement.leaf import SSP_leaf
+from src.SSP_lib import SSP_solver
 
 __author__ = "Bogdan Kirilenko"
 __email__ = "kirilenkobm@gmail.com"
@@ -59,8 +61,8 @@ class SSP_wrapper:
         # check limits
         tot_sum = sum(numbers)
         arr_len = len(numbers)
-        min_elem = min(numbers)
-        max_elem = max(numbers)
+        min_elem = numbers[0]
+        max_elem = numbers[-1]
 
         if self._get_d:
             # we were reqested to print dataset density
@@ -175,6 +177,10 @@ class SSP_wrapper:
             self.__v("# Subset size was specified: {}".format(args.subset_size))
             self.__make_single_subset_size()
         # call for different subset sizes until we get the answer
+        # py_solver = SSP_leaf(self.in_arr, self.requested_sum)
+        py_solver = SSP_solver(self.in_arr, self.requested_sum, self.subset_sizes)
+        answer = py_solver.get_answer()
+        exit()
         for subset_size in self.subset_sizes:
             answer = self.__call_lib(subset_size)
             if answer:  # stop, it's enough

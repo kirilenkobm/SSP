@@ -19,6 +19,8 @@ bool v = false;
 uint64_t arr_size = 0;
 uint64_t *f_max;
 uint64_t *f_min;
+uint64_t *f_max_a;
+uint64_t *f_min_a;
 uint64_t _f_arr_size;
 uint64_t *first_path;
 Num_q *num_count;
@@ -40,6 +42,8 @@ void _free_all()
 {
     free(f_max);
     free(f_min);
+    free(f_max_a);
+    free(f_min_a);
     free(num_count);
     free(first_path);
 }
@@ -223,6 +227,8 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
     uint64_t path_len = prev_p_len;
     uint64_t cur_val = _cur_val;
     uint64_t cur_ind = _cur_ind;
+    uint64_t inter_val = 0;
+    uint64_t compensation = 0;
 
     if (prev_path != NULL){
         // add existing part to answer
@@ -233,8 +239,6 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
     } else {pos_left = sub_size;}
 
     // create local f_max and f_min
-    uint64_t *f_max_a = accumulate_sum(f_max, arr_size);
-    uint64_t *f_min_a = accumulate_sum(f_min, arr_size);
     verbose("# Created fmin and fmax\n");
     uint64_t *_f_max = (uint64_t*)malloc(_l_f_arr_size * sizeof(uint64_t));
     for (uint64_t i = 0; i < _l_f_arr_size; i++){_f_max[i] = f_max[i];}
@@ -249,7 +253,7 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
     uint64_t delta_ind;
     uint64_t delta_spent;
     uint64_t delta_avail;
-
+=
     // the main loop, trying to add the next element
     for (uint64_t i = 0; i < pos_left; i++)
     {   
@@ -264,16 +268,27 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
         {
             // no values left
             if (cur_val == 0){
-                free(f_max_a);
-                free(f_min_a);
                 free(_f_max);
                 return path;
             }
             // get intermediate values
-            delta = req_sum - (prev_sum + cur_val);
+            inter_val = prev_sum + cur_val;
+            delta = req_sum - inter_val;
             points_left = pos_left - (i + 1);
-            sup = f_max_a[points_left];
+            sup = f_max_a[points_left] - compensation;
             inf = f_min_a[points_left];
+            uint64_t to_inf = prev_sum - inf;
+            uint64_t to_inf_ind = _elem_search(0, (__int128_t)_elem_num_max, to_inf);
+            if (to_inf_ind != _elem_num_max)
+            // we can fall down to fmin and that's it
+            {
+                uint64_t to_inf_spent = path_count[to_inf_ind].quantity;
+                uint64_t to_inf_avail= num_count[to_inf_ind].quantity;
+                // printf("to_inf: %llu ind: %llu \n", to_inf, to_inf_ind);
+                // printf("Used: %llu available: %llu\n", to_inf_spent, to_inf_avail);
+                if (to_inf_avail > to_inf_spent){printf("HA-HA-HABITCH\n");}
+                
+            }
 
             // need to be carefull -> comparing signed vs unsigned
             if ((delta > 0) && (uint64_t)delta > sup){
@@ -291,25 +306,19 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
             path_count[cur_ind].quantity++;
             path_len++;
 
-            if (delta > 0)
-            // we can also check if delta exists
-            // if yes -> just add it to answer and return
+            delta_ind = _elem_search(0, (__int128_t)_elem_num_max, (uint64_t)delta);
+            delta_spent = path_count[delta_ind].quantity;
+            delta_avail = num_count[delta_ind].quantity;
+            // if 0 > not found actually
+            // but I don't like conglomeration of if's
+            if ((delta_avail > 0) && (delta_spent < delta_avail))
+            // yes, it is available
             {
-                delta_ind = _elem_search(0, (__int128_t)_elem_num_max, (uint64_t)delta);
-                delta_spent = path_count[delta_ind].quantity;
-                delta_avail = num_count[delta_ind].quantity;
-                // if 0 > not found actually
-                // but I don't like conglomeration of if's
-                if ((delta_avail > 0) && (delta_spent < delta_avail))
-                // yes, it is available
-                {
-                    verbose("Delta %lld is in the dataset\n", delta);
-                    path[path_len] = delta;
-                    free(f_max_a);
-                    free(f_min_a);
-                    return path;
-                }
+                verbose("Delta %lld is in the dataset\n", delta);
+                path[path_len] = delta;
+                return path;
             }
+            // delta must be >= inf
             // carefully redefine _f_max here
             // and then redefine f_max_accumulated
             // necessary to check if it really makes any sense
@@ -322,15 +331,11 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
             // in this case the sum is really unreachable
             {
                 verbose("# Too many positions left to continue\n");
-                free(f_max_a);
-                free(f_min_a);
                 free(_f_max);
                 return path;
             }
         }
     }
-    free(f_max_a);
-    free(f_min_a);
     free(_f_max);
     return path;
 }
@@ -353,6 +358,8 @@ uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size, uint64_t sub_size,
     for (uint64_t i = 0; i < arr_size; i++){f_min[i + 1] = in_arr[i];}
     for (uint64_t i = 1, j = arr_size; i < arr_size + 1; i++, j--){f_max[j] = f_min[i];}
     arr_size++;  // arrays were started from 0, so size +1
+    f_max_a = accumulate_sum(f_max, arr_size);
+    f_min_a = accumulate_sum(f_min, arr_size);
     v = _v;  // maybe there's a better solution to implement verbosity
     // now count the elements
     uint64_t elem_num = 0;

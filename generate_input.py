@@ -5,6 +5,7 @@ import os
 import sys
 import subprocess
 import numpy as np
+from datetime import datetime as dt
 import scipy.stats as ss
 
 PERF_DIR = os.path.join(os.path.dirname(__file__), "performance")
@@ -15,10 +16,7 @@ os.mkdir(ANSWERS_DIR) if not os.path.isdir(ANSWERS_DIR) else None
 # some constants
 # input array size borders
 N_min = 1
-N_max = 1000000
-# number borders
-I_min = 1
-I_max = 100000
+N_max = 4294967296
 
 
 def parse_args():
@@ -33,6 +31,8 @@ def parse_args():
     app.add_argument("std_scale", type=int)
     app.add_argument("samples", type=int, help="Num of samples")
     app.add_argument("name_templ", help="Template for output filename")
+    app.add_argument("--versbose", "-v", action="store_true", dest="versbose",
+                     help="Show verbose messages")
     if len(sys.argv) < 5:
         app.print_help()
         sys.exit()
@@ -46,18 +46,28 @@ def parse_args():
         sys.exit("std scale expected to be >= 1")
     return args
 
+
+def eprint(msg, end="\n"):
+    """Print to stderr."""
+    sys.stderr.write(msg + end)
+
+
 def main():
     """Entry point."""
+    t0 = dt.now()
     args = parse_args()
     for s in range(args.samples):
         # TODO: also try uniform distribution, make an option
+        eprint("# Sample {} / {} in progress".format(s + 1, args.samples))
         rnd_sample = np.random.normal(scale=args.std_scale, size=args.N)
+        eprint("# Got random numbers")
         rnd_sample_int = [int(x) + 1 for x in abs(np.round(rnd_sample))]
         sum_forms = sorted(rnd_sample_int[:args.n], reverse=True)
         ans_sum = sum(sum_forms)
         filename = "{}_{}".format(s, args.name_templ)
         in_path = os.path.join(INPUTS_DIR, filename)
         ans_path = os.path.join(ANSWERS_DIR, filename)
+        eprint("# Saving the results...")
         with open(ans_path, "w") as f:
             f.write("{}\n".format(str(sum_forms)))
             f.write("Sum = {}\n".format(ans_sum))
@@ -65,6 +75,8 @@ def main():
         in_str = [str(n) for n in rnd_sample_int]
         with open(in_path, "w") as f:
             f.write("\n".join(in_str) + "\n")
+    eprint("The set was generated in {}".format(dt.now() - t0))
+
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "clean":
