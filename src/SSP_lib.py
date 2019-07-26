@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Temporary Python replacement.
 
 To be rewritten in C later.
@@ -82,9 +83,9 @@ class SSP_solver:
         if self.req_sum in self.sum_paths.keys():
             # we already know the answer:
             path_ids = self.sum_paths[self.req_sum]
-            return self.__get_raw_paths(path_ids)
+            print("On anchor point")
+            return sorted(self.__get_raw_paths(path_ids)[0])
         # not good, but terrible
-        print("We are here")
         # find anchor points that fit
         path_delta = []
         for item in self.sum_paths.keys():
@@ -108,15 +109,28 @@ class SSP_solver:
                 continue
             # let's put in in the naïve solver
             naive_solver = SSP_naive(s_2_candidates, delta)
-            for s_size in range(3, len(s_2_candidates) - 1):
+            _f_min_s2_ = s_2_candidates.copy()
+            _f_max_s2_ = _f_min_s2_[::-1]
+            _f_min_s2_a_ = accumulate_sum(_f_min_s2_)
+            _f_max_s2_a_ = accumulate_sum(_f_max_s2_)
+            _sub_sizes = []
+            # get valid subset sizes
+            for i in range(len(_f_max_s2_)):
+                s_size = i + 1
+                inf = _f_min_s2_a_[i]
+                sup = _f_max_s2_a_[i]
+                if delta == inf:
+                    sys.exit("TRAP1")
+                elif delta == sup:
+                    sys.exit("TRAP2")
+                elif inf < delta < sup:
+                    _sub_sizes.append(s_size)
+            for s_size in _sub_sizes:
                 naive_sol = naive_solver.get_answer(s_size)
                 if not naive_sol:
                     continue
                 ans = naive_sol + f_max_
-                print(ans)
-                print(sum(ans))
-                print(Counter(ans).most_common(10))
-                exit()
+                return ans
         return []
 
 def _shift(seq):

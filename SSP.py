@@ -180,6 +180,8 @@ class SSP_wrapper:
         # py_solver = SSP_leaf(self.in_arr, self.requested_sum)
         py_solver = SSP_solver(self.in_arr, self.requested_sum, self.subset_sizes)
         answer = py_solver.get_answer()
+        print(answer)
+        print(sum(answer))
         exit()
         for subset_size in self.subset_sizes:
             answer = self.__call_lib(subset_size)
