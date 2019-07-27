@@ -20,6 +20,8 @@ kirilenkobm@gmail.com
 #define MAXCHAR 22
 #define ALLOC 100
 #define ALLOC_STEP 100
+#define LEAF_ALLOC 10
+#define LEAD_ALLOC_STEP 10
 #define CHUNK 5
 
 
@@ -30,6 +32,17 @@ typedef struct
 } In_data;
 
 
+typedef struct
+{
+    uint64_t sum;
+    uint64_t *max_shifts;
+    uint64_t *max_indexes;
+    uint64_t *min_shifts;
+    uint64_t *min_indexes;
+    uint64_t exists;  // how many times it exists
+} Leaf_node;
+
+
 // global variables
 uint64_t f_size_ext;
 In_data in_arr;
@@ -37,6 +50,8 @@ uint64_t *f_min_glob;
 uint64_t *f_max_glob;
 uint64_t *f_min_acc_glob;
 uint64_t *f_max_acc_glob;
+Leaf_node *glob_list;
+uint64_t leaf_size;
 
 
 // print usage guids and quit
@@ -57,6 +72,14 @@ void free_all()
     free(in_arr.S);
     free(f_min_glob);
     free(f_max_glob);
+    for (uint64_t i = 0; i < leaf_size; i++)
+    {
+        free(glob_list[i].max_indexes);
+        free(glob_list[i].max_shifts);
+        free(glob_list[i].min_indexes);
+        free(glob_list[i].min_shifts);
+    }
+    free(glob_list);
 }
 
 
@@ -141,16 +164,45 @@ uint64_t read_target(char *X_arg)
     return X;
 }
 
+
+// create accumulated sum array
+uint64_t *accumulate_sum(uint64_t *arr, uint64_t arr_size, uint64_t shift)
+{
+    uint64_t *res = (uint64_t*)malloc(arr_size * sizeof(uint64_t));
+    res[0] = arr[shift];
+    for (uint64_t i = shift + 1; i < arr_size + shift; i++)
+    {
+        res[i] = res[i - 1] + arr[i];
+    }
+    return res;
+}
+
+
+// compute array sum
+uint64_t arr_sum(uint64_t *arr, uint64_t arr_size)
+{
+    uint64_t sum = 0;
+    for (uint64_t i = 0; i < arr_size; i++){
+        sum += arr[i];
+        if (sum >= UINT64_MAX){
+            fprintf(stderr, "Sorry, but sadly this program cannot handle arrays,\n");
+            fprintf(stderr, "sum of which is > UINT64_MAX, thank you for your\n");
+            fprintf(stderr, "understanding. Exit.\n");
+            exit(3);
+        }
+    }
+    return sum;
+}
+
+
 // the entry point
 int main(int argc, char ** argv)
 {
-    // read args first
+    // read and check input data
     if (argc != 3){usage(argv[0]);}
-    // read input then
     In_data in_arr = read_input(argv[1]);
-    // in_arr.S - given array, in_arr.k - array size
     uint64_t X = read_target(argv[2]);
-    fprintf(stderr, "Array size: %llu; Target: %llu\n", in_arr.k, X);
+    fprintf(stderr, "# Array size: %llu; Target: %llu\n", in_arr.k, X);
 
     // define fmax and fmin
     f_size_ext = in_arr.k * 2;
@@ -166,7 +218,24 @@ int main(int argc, char ** argv)
         f_max_glob[(in_arr.k * 2) - i_num] = in_arr.S[i];
         i_num++;
     }
-    for (uint16_t i = 0; i < f_size_ext; i++){printf("%llu\n", f_min_glob[i]);}
+    
+    // create the leaf
+    uint64_t in_sum = arr_sum(in_arr.S, in_arr.k);
+    leaf_size = in_sum + 1;
+    fprintf(stderr, "# Array sum is %llu\n", in_sum);
+    glob_list = (Leaf_node*)malloc(sizeof(Leaf_node) * leaf_size);
+    for (uint64_t i = 0; i < leaf_size; i++){
+        glob_list[i].sum = i;
+        glob_list[i].exists = 0;
+        glob_list[i].max_shifts = (uint64_t*)calloc(LEAF_ALLOC, sizeof(uint64_t));
+        glob_list[i].max_indexes = (uint64_t*)calloc(LEAF_ALLOC, sizeof(uint64_t));
+        glob_list[i].min_shifts = (uint64_t*)calloc(LEAF_ALLOC, sizeof(uint64_t));
+        glob_list[i].min_indexes = (uint64_t*)calloc(LEAF_ALLOC, sizeof(uint64_t));
+    }
+
+    // fill the leaf
+
+
     free_all();
     return 0;
 }

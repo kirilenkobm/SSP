@@ -29,7 +29,7 @@ class SSP_wrapper:
         self.subset_size = subset_size
         self.answer = None
         self.__make_input_arr()
-        self.__get_subset_sizes()
+        # self.__get_subset_sizes()
         self.__configure_lib()
     
     @staticmethod
@@ -196,8 +196,8 @@ def parse_args():
     app.add_argument("input", help="Text file containing input numbers, or stdin stream, "
                                     "just write stdin for that")
     app.add_argument("requested_sum", type=int, help="Sum requested")
-    app.add_argument("--subset_size", "-s", type=int, default=0,
-                     help="Specify particular size of subset, look only for this")
+    # app.add_argument("--subset_size", "-s", type=int, default=0,
+    #                 help="Specify particular size of subset, look only for this")
     app.add_argument("--get_density", "-d", action="store_true", dest="get_density",
                      help="Compute dataset density")
     app.add_argument("--verbose", "-v", action="store_true", dest="verbose",
