@@ -114,7 +114,6 @@ class Kirilenko_lib:
         elif self.X in numbers:
             print("Requested sum is in S")
             self.answer = [self.X]
-            self.__configure_lib = self.__do_nothing
             return
         self.S = numbers
         self.k = len(numbers)
@@ -130,7 +129,6 @@ class Kirilenko_lib:
         self.lib = ctypes.cdll.LoadLibrary(lib_path)
         # convert everyting into C types
         self.lib.solve_SSP.argtypes = [ctypes.POINTER(ctypes.c_uint64),
-                                       ctypes.c_uint64,
                                        ctypes.c_uint64,
                                        ctypes.c_uint64,
                                        ctypes.c_bool]
@@ -158,16 +156,14 @@ class Kirilenko_lib:
             self.answer = self.leaf[self.X].retrieve(self.f_max, self.f_min, one=True)
             # mask other methods
 
-    def __call_lib(self, arr, X, s_size):
+    def __call_lib(self, arr, X):
         """Call lib with the parameters given."""
         c_arr = (ctypes.c_uint64 * (len(arr) + 1))()
         c_arr[:-1] = arr
         c_arr_size = ctypes.c_uint64(len(arr))
         c_X = ctypes.c_uint64(X)
-        c_s_size = ctypes.c_uint64(s_size)
         result = self.lib.solve_SSP(c_arr,
                                     c_arr_size,
-                                    c_s_size,
                                     c_X,
                                     self.c_v)
         # get everything except 0; check the answer
@@ -177,10 +173,8 @@ class Kirilenko_lib:
             if elem == 0:
                 break
         if sum(_answer) != X:
-            return False
+            return None
         # answer is correct
-        self.__v("# Found result at subset size {}".format(s_size))
-        del self.lib
         return _answer
 
     def solve_ssp(self):
@@ -212,11 +206,14 @@ class Kirilenko_lib:
                 way_count = Counter(way)
                 s_2_co = s_2_candidates - way_count
                 s_2 = sorted(flatten([k for _ in range(v)] for k, v in s_2_co.items()))
-                solver = SSP_naive(s_2, delta)
                 if sum(s_2) < delta:
                     # unreachable
                     continue
-                sol = solver.get_answer()
+                # solver = SSP_naive(s_2, delta)
+                # sol = solver.get_answer()
+                sol = self.__call_lib(s_2, delta)
+                # print("C answer: {}".format(c_sol))
+                # print("Py answer: {}".format(sol))
                 if not sol:
                     continue
                 answer = sol + list(way)
