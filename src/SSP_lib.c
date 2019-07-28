@@ -32,10 +32,14 @@ typedef struct
 
 // global variables
 bool v = false;
+bool first_allocated = false;
 uint64_t *f_max;
 uint64_t *f_min;
 uint64_t *f_max_a;
 uint64_t *f_min_a;
+uint64_t *first_path;
+Num_q *num_count;
+uint64_t uniq_num = 0;
 
 
 // free all variables
@@ -45,6 +49,8 @@ void free_all()
     free(f_min);
     free(f_max_a);
     free(f_min_a);
+    if (first_allocated){free(first_path);}
+    free(num_count);
 }
 
 
@@ -176,10 +182,10 @@ void add_to_zero_counter(Num_q *counter, uint64_t *arr, uint64_t arr_size)
 
 
 // create empty counter
-Num_q *_get_zero_num_q(uint64_t elem_num, Num_q *num_count)
+Num_q *_get_zero_num_q()
 {
-    Num_q *res = (Num_q*)malloc(elem_num * sizeof(Num_q));
-    for (uint64_t i = 0; i < elem_num; i++)
+    Num_q *res = (Num_q*)malloc(uniq_num * sizeof(Num_q));
+    for (uint64_t i = 0; i < uniq_num; i++)
     {
         res[i].number = num_count[i].number;
         res[i].quantity = 0;
@@ -189,7 +195,7 @@ Num_q *_get_zero_num_q(uint64_t elem_num, Num_q *num_count)
 
 
 // check if current value still can be used
-uint64_t check_current(Num_q *path, uint64_t cur_ind, Num_q *num_count)
+uint64_t check_current(Num_q *path, uint64_t cur_ind)
 {
     uint64_t used = path[cur_ind].quantity;
     uint64_t available = num_count[cur_ind].quantity;
@@ -217,8 +223,7 @@ uint64_t arr_sum(uint64_t *arr, uint64_t up_to)
 
 
 // __int128_t just to avoid overflows, maybe an overkill
-uint64_t _elem_search(Num_q *num_count, uint64_t max_elem, __int128_t l,
-                      __int128_t r, uint64_t w)
+uint64_t _elem_search(__int128_t l, __int128_t r, uint64_t w)
 // use the same parameter TWICE!
 {
     if (r >= l)
@@ -227,23 +232,23 @@ uint64_t _elem_search(Num_q *num_count, uint64_t max_elem, __int128_t l,
         if (num_count[mid].number == w){
             return mid;
         } else if (num_count[mid].number < w){
-            return _elem_search(num_count, max_elem, l, mid - 1, w);
+            return _elem_search(l, mid - 1, w);
         } else {
-            return _elem_search(num_count, max_elem, mid + 1, r, w);
+            return _elem_search(mid + 1, r, w);
         }
     }
-    return max_elem;
+    return uniq_num;
 }
 
 
 // get path for the subset size given
 uint64_t *get_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
-                   uint64_t _cur_val, uint64_t _cur_ind, Num_q *num_count, 
-                   uint64_t elem_num, uint64_t req_sum, uint64_t arr_size)
+                   uint64_t _cur_val, uint64_t _cur_ind, 
+                   uint64_t req_sum, uint64_t arr_size)
 {
     // initiate values
     uint64_t *path = (uint64_t*)calloc(sub_size + CHUNK, sizeof(uint64_t));
-    Num_q *path_count = _get_zero_num_q(elem_num, num_count);
+    Num_q *path_count = _get_zero_num_q();
     uint64_t pos_left;  // don't change this
     uint64_t _l_f_arr_size = arr_size;  // to keep local
     uint64_t path_len = prev_p_len;
@@ -278,7 +283,7 @@ uint64_t *get_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
     {   
         bool passed = false;
         prev_sum = arr_sum(path, path_len);
-        cur_ind = check_current(path_count, cur_ind, num_count);
+        cur_ind = check_current(path_count, cur_ind);
         cur_val = num_count[cur_ind].number;
 
         while (!passed)
@@ -295,9 +300,8 @@ uint64_t *get_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
             sup = f_max_a[points_left];
             inf = f_min_a[points_left];
             uint64_t to_inf = prev_sum - inf;
-            uint64_t to_inf_ind = _elem_search(num_count, elem_num, 0,
-                                               (__int128_t)elem_num, to_inf);
-            if (to_inf_ind != elem_num)
+            uint64_t to_inf_ind = _elem_search(0, (__int128_t)uniq_num, to_inf);
+            if (to_inf_ind != uniq_num)
             // we can fall down to fmin and that's it
             {
                 uint64_t to_inf_spent = path_count[to_inf_ind].quantity;
@@ -322,8 +326,7 @@ uint64_t *get_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
             path_count[cur_ind].quantity++;
             path_len++;
 
-            delta_ind = _elem_search(num_count, elem_num, 0,
-                                     (__int128_t)elem_num, (uint64_t)delta);
+            delta_ind = _elem_search(0, (__int128_t)uniq_num, (uint64_t)delta);
             delta_spent = path_count[delta_ind].quantity;
             delta_avail = num_count[delta_ind].quantity;
             // if 0 > not found actually
@@ -363,9 +366,9 @@ uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size, uint64_t req_sum, bool
     v = _v;  // maybe there's a better solution to implement verbosity
 
     // now count the elements
-    uint64_t elem_num = 0;
-    Num_q *num_count = count_elements(f_max, arr_size, &elem_num);
-    verbose("# %llu unique numbers in the dataset\n", elem_num);
+    uniq_num = 0;
+    num_count = count_elements(f_max, arr_size, &uniq_num);
+    verbose("# %llu unique numbers in the dataset\n", uniq_num);
 
     // get suitable subset sizes
     Sz_out s_sizes = get_subset_sizes(arr_size, req_sum);
@@ -402,13 +405,16 @@ uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size, uint64_t req_sum, bool
         cur_ind = 0;
         cur_val = num_count[cur_ind].number;
 
-        uint64_t * first_path = get_path(sub_size, NULL, 0, cur_val, cur_ind, num_count,
-                                         elem_num, req_sum, arr_size);
+        
+        uint64_t * first_path = get_path(sub_size, NULL, 0, cur_val, cur_ind,
+                                         req_sum, arr_size);
         uint64_t path_sum = arr_sum(first_path, sub_size);
         if (path_sum == req_sum){
             free_all();
             return first_path;
         }
+        // otherwise we will free first and then return
+        first_allocated = true;
         verbose("First path doesn't fit\n");
         uint64_t p = 0;
         uint64_t pointed;
@@ -421,7 +427,7 @@ uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size, uint64_t req_sum, bool
             p = p_ - 1;   // if >= then it is an infinite loop
             pointed = first_path[p];
             if (pointed == 0) {continue;}
-            pointed_ind = _elem_search(num_count, elem_num, 0, (__int128_t)elem_num, pointed);
+            pointed_ind = _elem_search(0, (__int128_t)uniq_num, pointed);
             bool possible = true;
             while (possible)
             // decrease while decreseable  
@@ -436,7 +442,7 @@ uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size, uint64_t req_sum, bool
                 try_path[p] = lower;
                 // try to get this path
                 uint64_t *try_res = get_path(sub_size, try_path, p + 1, lower, lower_ind, 
-                                             num_count, elem_num, req_sum, arr_size);
+                                             req_sum, arr_size);
                 pointed = lower;
                 pointed_ind = lower_ind;
                 // do not forget!
