@@ -10,8 +10,15 @@ kirilenkobm@gmail.com
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "SSP_lib.h"
+// #include "SSP_lib.h"
 #define CHUNK 5
+
+
+typedef struct
+{
+    uint64_t number;
+    uint64_t quantity;
+} Num_q;
 
 
 // global
@@ -253,7 +260,7 @@ uint64_t *find_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
     uint64_t delta_ind;
     uint64_t delta_spent;
     uint64_t delta_avail;
-=
+
     // the main loop, trying to add the next element
     for (uint64_t i = 0; i < pos_left; i++)
     {   

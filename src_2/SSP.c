@@ -257,23 +257,24 @@ int main(int argc, char ** argv)
     }
     
     // create the leaf
+    return 0;
     uint64_t in_sum = arr_sum(in_arr.S, in_arr.k);
     leaf_size = in_sum + 1;
     fprintf(stderr, "# Array sum is %llu\n", in_sum);
     Leaf = (Leaf_node*)malloc(sizeof(Leaf_node) * leaf_size);
-    for (uint64_t i = 0; i < leaf_size; i++){
-        Leaf[i].sum = i;
-        Leaf[i].max_exists = 0;
-        Leaf[i].min_exists = 0;
-        Leaf[i].max_shifts = (uint64_t*)calloc(LEAF_ALLOC, sizeof(uint64_t));
-        Leaf[i].max_indexes = (uint64_t*)calloc(LEAF_ALLOC, sizeof(uint64_t));
-        Leaf[i].max_allocated = LEAF_ALLOC;
-        Leaf[i].min_shifts = (uint64_t*)calloc(LEAF_ALLOC, sizeof(uint64_t));
-        Leaf[i].min_indexes = (uint64_t*)calloc(LEAF_ALLOC, sizeof(uint64_t));
-        Leaf[i].max_allocated = LEAF_ALLOC;
 
-    }
+    // for (uint64_t i = 0; i < leaf_size; i++){
+    //     Leaf[i].sum = i;
+    //     Leaf[i].max_exists = 0;
+    //     Leaf[i].min_exists = 0;
+    //     Leaf[i].max_shifts = (uint64_t*)calloc(LEAF_ALLOC, sizeof(uint64_t));
+    //     Leaf[i].max_indexes = (uint64_t*)calloc(LEAF_ALLOC, sizeof(uint64_t));
+    //     Leaf[i].max_allocated = LEAF_ALLOC;
+    //     Leaf[i].min_shifts = (uint64_t*)calloc(LEAF_ALLOC, sizeof(uint64_t));
+    //     Leaf[i].min_indexes = (uint64_t*)calloc(LEAF_ALLOC, sizeof(uint64_t));
+    //     Leaf[i].max_allocated = LEAF_ALLOC;
 
+    // }
     // fill the leaf -> todo: move to another function
     uint64_t *f_min_acc = (uint64_t*)calloc(f_size_ext, sizeof(uint64_t));
     uint64_t *f_max_acc = (uint64_t*)calloc(f_size_ext, sizeof(uint64_t));
@@ -329,9 +330,12 @@ int main(int argc, char ** argv)
         printf("The answer is:\n");
         for (uint64_t i = 0; i <= Leaf[X].max_indexes[0]; i++){
             printf("%llu\n", answer[i]);
+        free_all();
+        return 0;
         }
     }
-
+    // we are not lucky, time to deal with complicated stuff
+    printf("Complicated case\n");
     free_all();
     return 0;
 }
