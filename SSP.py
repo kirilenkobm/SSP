@@ -9,7 +9,6 @@ from collections import Counter
 from datetime import datetime as dt
 from math import log
 import ctypes
-# from py_replacement.leaf import SSP_leaf
 from src.SSP_naive import SSP_naive
 
 __author__ = "Bogdan Kirilenko"
@@ -220,7 +219,6 @@ class Kirilenko_lib:
                 sol = solver.get_answer()
                 if not sol:
                     continue
-                print(way, sol)
                 answer = sol + list(way)
                 return answer
 
