@@ -4,11 +4,13 @@ import argparse
 import sys
 import os
 import platform
+from collections import defaultdict
+from collections import Counter
 from datetime import datetime as dt
 from math import log
 import ctypes
 # from py_replacement.leaf import SSP_leaf
-from src.SSP_lib import SSP_solver
+from src.SSP_naive import SSP_naive
 
 __author__ = "Bogdan Kirilenko"
 __email__ = "kirilenkobm@gmail.com"
@@ -18,20 +20,53 @@ __version__ = 0.1
 UINT64_SIZE = 18446744073709551615
 
 
-class SSP_wrapper:
-    """SSP shared library wrapper."""
-    def __init__(self, in_file, req_sum, subset_size=0, v=False, d=False):
+class Leaf_node:
+    """Mini-class to hold leaf nodes."""
+    def __init__(self):
+        """Initiate the node."""
+        self.value = 0
+        self.max_coords = set()
+        self.min_coords = set()
+
+    def __repr__(self):
+        """How to represent it."""
+        s = "Sum {} | Max coords: {} | Min_coords: {}"
+        return s.format(self.value, str(self.max_coords), str(self.min_coords))
+
+    def retrieve(self, f_max, f_min, one=False):
+        """Return subset under this node."""
+        answer = []
+        for elem in self.max_coords:
+            slice_ = tuple(sorted(f_max[elem[0]: elem[0] + elem[1]]))
+            answer.append(slice_)
+            if one:
+                return answer[0]
+        for elem in self.min_coords:
+            slice_ = tuple(sorted(f_min[elem[0]: elem[0] + elem[1]]))
+            answer.append(slice_)
+            if one:
+                return answer[0]
+        return set(answer)
+
+
+class Kirilenko_lib:
+    """Class to solve Subset Sum Problem in natural numbers.
+
+    S - input multiset of numbers
+    k - number of elements in the set
+    X - sum of subset s in S
+    """
+    def __init__(self, in_file, req_sum, v=False, d=False):
         """Initiate the class."""
         self.in_file = in_file
-        self.requested_sum = req_sum
+        self.X = req_sum
         self._verbose = v
         self._get_d = d
-        self.subset_size = subset_size
         self.answer = None
         self.__make_input_arr()
-        # self.__get_subset_sizes()
-        self.__configure_lib()
-    
+        self.__make_leaf()
+        self.elems_count = Counter()
+
     @staticmethod
     def __do_nothing(*args):
         """Just do nothing."""
@@ -71,46 +106,20 @@ class SSP_wrapper:
         if tot_sum > UINT64_SIZE:
             sys.exit("Error: overall input sum should not exceed "
                      "the uint64_t capacity, got {}".format(tot_sum))
-        elif self.requested_sum > tot_sum:
+        elif self.X > tot_sum:
             sys.exit("Requested sum {} > overall sum of the array {}, "
-                     "abort".format(self.requested_sum, tot_sum))
-        elif self.requested_sum < min_elem:
+                     "abort".format(self.X, tot_sum))
+        elif self.X < min_elem:
             sys.exit("Requested sum {} < smallest element in the array {}, "
-                     "abort".format(self.requested_sum, min_elem))
-        elif self.requested_sum in numbers:
-            print("Requested sum is in the array")
-            self.answer = [self.requested_sum]
-            self.__get_subset_sizes = self.__do_nothing
+                     "abort".format(self.X, min_elem))
+        elif self.X in numbers:
+            print("Requested sum is in S")
+            self.answer = [self.X]
             self.__configure_lib = self.__do_nothing
             return
-        self.in_arr = numbers
-        self.in_arr_len = len(numbers)
-        self.__v("# Input array of size {}".format(self.in_arr_len))
-
-    def __get_subset_sizes(self):
-        """Get subset sizes to check."""
-        f_min = self.in_arr[:]
-        f_max = self.in_arr[::-1]
-        f_min_acc = accumulate_sum(f_min)
-        f_max_acc = accumulate_sum(f_max)
-        # find the first elem what's bigger
-        subset_sizes = []
-        # 1 is deleted, should be specially noted
-        for i in range(len(f_max_acc)):
-            sub_size = i + 1
-            inf = f_min_acc[i]
-            sup = f_max_acc[i]
-            if self.requested_sum == inf:
-                # the problem is actually solved
-                self.answer = f_min[:i + 1][::-1]
-                self.__configure_lib = self.__do_nothing
-            elif self.requested_sum == sup:
-                self.answer = f_max[:i + 1][::-1]
-                self.__configure_lib = self.__do_nothing
-            elif inf < self.requested_sum < sup:
-                subset_sizes.append(sub_size)
-        self.subset_sizes = subset_sizes
-        self.__v("# Will try {} subset sizes".format(len(subset_sizes)))
+        self.S = numbers
+        self.k = len(numbers)
+        self.__v("# Input array of size {}".format(self.k))
 
     def __configure_lib(self):
         """Find the lib and configure it."""
@@ -126,44 +135,52 @@ class SSP_wrapper:
                                        ctypes.c_uint64,
                                        ctypes.c_uint64,
                                        ctypes.c_bool]
-        
-        self.c_arr = (ctypes.c_uint64 * (self.in_arr_len + 1))()
-        self.c_arr[:-1] = self.in_arr
-        self.c_arr_size = ctypes.c_uint64(self.in_arr_len)
-        self.c_req_sum = ctypes.c_uint64(self.requested_sum)
         self.c_v = ctypes.c_bool(self._verbose)
         self.lib.solve_SSP.restype = ctypes.POINTER(ctypes.c_uint64)
 
-    def __make_single_subset_size(self):
-        """Check if requested subset length is possible."""
-        if self.subset_size < self.subset_sizes[0] \
-            or self.subset_size > self.subset_sizes[-1]:
-            print("# Impossible to find combination of length {}" \
-                "".format(self.subset_size))
-            print("# Please use one of these for this input:")
-            print(str(self.subset_sizes))
-            sys.exit("Abort")
-        self.subset_sizes = [self.subset_size]
+    def __make_leaf(self):
+        """Create leaf structure."""
+        self.leaf = defaultdict(Leaf_node)
+        self.f_min = self.S[:]
+        self.f_min += self.f_min
+        self.f_max = self.S[::-1]
+        self.f_max += self.f_max
+        for shift in range(0, self.k):
+            f_max_acc = accumulate_sum(self.f_max[shift: shift + self.k])
+            f_min_acc = accumulate_sum(self.f_min[shift: shift + self.k])
+            for i, _sum in enumerate(f_max_acc):
+                self.leaf[_sum].value = _sum
+                self.leaf[_sum].max_coords.add((shift, i + 1))
+            for i, _sum in enumerate(f_min_acc):
+                self.leaf[_sum].value = _sum
+                self.leaf[_sum].min_coords.add((shift, i + 1))
+        if self.X in self.leaf.keys():
+            # exclude X in S
+            self.answer = self.leaf[self.X].retrieve(self.f_max, self.f_min, one=True)
+            # mask other methods
 
-    def __call_lib(self, subset_size):
+    def __call_lib(self, arr, X, s_size):
         """Call lib with the parameters given."""
-        self.__v("# Trying subset size: {}".format(subset_size))
-        self.c_sub_size = ctypes.c_uint64(subset_size)
-        # get and parse the result
-        result = self.lib.solve_SSP(self.c_arr,
-                                    self.c_arr_size,
-                                    self.c_sub_size,
-                                    self.c_req_sum,
+        c_arr = (ctypes.c_uint64 * (len(arr) + 1))()
+        c_arr[:-1] = arr
+        c_arr_size = ctypes.c_uint64(len(arr))
+        c_X = ctypes.c_uint64(X)
+        c_s_size = ctypes.c_uint64(s_size)
+        result = self.lib.solve_SSP(c_arr,
+                                    c_arr_size,
+                                    c_s_size,
+                                    c_X,
                                     self.c_v)
         # get everything except 0; check the answer
-        _answer = [result[i] for i in range(subset_size) if result[i] != 0]
-        if sum(_answer) != self.requested_sum:
-            msg_ = "No results for:\n IN FILE: {} REQ_SUM: {} SUBSET_SIZE: {}" \
-                   "".format(self.in_file, self.requested_sum, subset_size)
-            self.__v(msg_)
+        _answer = []
+        for elem in result:
+            _answer.append(elem) if elem != 0 else None
+            if elem == 0:
+                break
+        if sum(_answer) != X:
             return False
         # answer is correct
-        self.__v("# Found result at subset size {}".format(subset_size))
+        self.__v("# Found result at subset size {}".format(s_size))
         del self.lib
         return _answer
 
@@ -172,23 +189,40 @@ class SSP_wrapper:
         if self.answer is not None:
             # answer already found
             return self.answer
-        # ok, we actually have to compute this
-        if self.subset_size != 0:  # check if the requested length is valid
-            self.__v("# Subset size was specified: {}".format(args.subset_size))
-            self.__make_single_subset_size()
-        # call for different subset sizes until we get the answer
-        # py_solver = SSP_leaf(self.in_arr, self.requested_sum)
-        py_solver = SSP_solver(self.in_arr, self.requested_sum, self.subset_sizes)
-        answer = py_solver.get_answer()
-        print(answer)
-        print(sum(answer))
-        exit()
-        for subset_size in self.subset_sizes:
-            answer = self.__call_lib(subset_size)
-            if answer:  # stop, it's enough
-                self.answer = answer
-                return self.answer
-        return self.answer
+        # try naïve approach from 0
+        self.__configure_lib()
+        # naive_ans = self.__call_lib(self.S, self.X)
+        # if naive_ans:
+        #     return naive_ans
+        # ok, try going over the list
+        all_nodes_ = list(self.leaf.keys())
+        # delete nodes that are > X (== not exist)
+        for node in all_nodes_:
+            if node < self.X:
+                continue
+            del self.leaf[node]
+        del all_nodes_
+
+        self.elems_count = Counter(self.S)
+        all_nodes = sorted(self.leaf.keys(), reverse=True)
+        for node in all_nodes:
+            delta = self.X - node
+            ways_to_node = self.leaf[node].retrieve(self.f_max, self.f_min)
+            s_2_candidates = Counter({k: v for k, v in self.elems_count.items() if k < delta})
+            for way in ways_to_node:
+                way_count = Counter(way)
+                s_2_co = s_2_candidates - way_count
+                s_2 = sorted(flatten([k for _ in range(v)] for k, v in s_2_co.items()))
+                solver = SSP_naive(s_2, delta)
+                if sum(s_2) < delta:
+                    # unreachable
+                    continue
+                sol = solver.get_answer()
+                if not sol:
+                    continue
+                print(way, sol)
+                answer = sol + list(way)
+                return answer
 
 def parse_args():
     """Parse and check args."""
@@ -196,8 +230,8 @@ def parse_args():
     app.add_argument("input", help="Text file containing input numbers, or stdin stream, "
                                     "just write stdin for that")
     app.add_argument("requested_sum", type=int, help="Sum requested")
-    # app.add_argument("--subset_size", "-s", type=int, default=0,
-    #                 help="Specify particular size of subset, look only for this")
+    app.add_argument("--subset_size", "-s", type=int, default=0,
+                    help="Specify particular size of subset, look only for this")
     app.add_argument("--get_density", "-d", action="store_true", dest="get_density",
                      help="Compute dataset density")
     app.add_argument("--verbose", "-v", action="store_true", dest="verbose",
@@ -221,9 +255,14 @@ def accumulate_sum(lst):
     return accumulated_sum
 
 
-def main(input_file, requested_sum, subset_size, v, d):
+def flatten(lst):
+    """Flatten a list of lists into a list."""
+    return [item for sublist in lst for item in sublist]
+
+
+def main(input_file, requested_sum, v, d):
     """Entry point."""
-    ssp = SSP_wrapper(input_file, requested_sum, subset_size, v, d)
+    ssp = Kirilenko_lib(input_file, requested_sum, v, d)
     answer = ssp.solve_ssp()
     ans_str = str(sorted(answer, reverse=True)) if answer else "None"
     print("The answer is:\n{}".format(ans_str))
@@ -232,5 +271,4 @@ def main(input_file, requested_sum, subset_size, v, d):
 if __name__ == "__main__":
     args = parse_args()
     main(args.input, args.requested_sum,
-         args.subset_size, args.verbose,
-         args.get_density)
+         args.verbose, args.get_density)

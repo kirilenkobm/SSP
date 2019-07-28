@@ -98,38 +98,64 @@ class SSP_naive:
             return None
         return path
 
-    def get_answer(self, subset_size):
+    def __get_sub_sizes(self):
+        """For set S return a range of subset sizes."""
+        # S considered to be sorted
+        f_min = [0] + self.in_arr
+        f_max = [0] + self.in_arr[::-1]
+        f_min_a = accumulate_sum(f_min)
+        f_max_a = accumulate_sum(f_max)
+        subset_sizes = []
+        for i in range(len(f_max_a)):
+            s_size = i + 1
+            inf = f_min_a[i]
+            sup = f_max_a[i]
+            if self.req_sum == inf:
+                ans = f_min[:i + 1]
+                return [], ans
+            elif self.req_sum == sup:
+                ans = f_max[:i + 1]
+                return [], ans
+            elif inf < self.req_sum < sup:
+                subset_sizes.append(s_size)
+        return subset_sizes, None
+
+    def get_answer(self):
         """Try to get answer of the size given."""
         # find the first pathway
-        start = self.all_numbers[0]
-        first_path = self._find_path(subset_size, [], start, True)
-        if sum(first_path) == self.req_sum:
-            # the best case
-            return first_path
-        if not first_path:
-            return False
-        # the worst case
-        for pointer in range(subset_size - 2, -1, -1):
-            if pointer >= len(first_path):
+        subset_sizes, ans_ = self.__get_sub_sizes()
+        if ans_:
+            return ans_
+        for subset_size in subset_sizes:
+            start = self.all_numbers[0]
+            first_path = self._find_path(subset_size, [], start, True)
+            if sum(first_path) == self.req_sum:
+                # the best case
+                return first_path
+            if not first_path:
                 continue
-            pointed = first_path[pointer]
-            possible = True
-            # trying to find path decreasing
-            # the pointed value
-            while possible:
-                lower = self.__get_next_size(pointed)
-                if not lower:
-                    possible = False
-                    break
-                try_path = first_path[:pointer]
-                try_path.append(lower)
-                new_res = self._find_path(subset_size, try_path, lower)
-                pointed = lower
-                if not new_res:
+            # the worst case
+            for pointer in range(subset_size - 2, -1, -1):
+                if pointer >= len(first_path):
                     continue
-                return new_res
-        # unfortunately, nothing was found
-        return False
+                pointed = first_path[pointer]
+                possible = True
+                # trying to find path decreasing
+                # the pointed value
+                while possible:
+                    lower = self.__get_next_size(pointed)
+                    if not lower:
+                        possible = False
+                        break
+                    try_path = first_path[:pointer]
+                    try_path.append(lower)
+                    new_res = self._find_path(subset_size, try_path, lower)
+                    pointed = lower
+                    if not new_res:
+                        continue
+                    return new_res
+            # unfortunately, nothing was found
+        return None
 
 
 def flatten(lst):
