@@ -9,7 +9,6 @@ from collections import Counter
 from datetime import datetime as dt
 from math import log
 import ctypes
-from src.SSP_naive import SSP_naive
 
 __author__ = "Bogdan Kirilenko"
 __email__ = "kirilenkobm@gmail.com"
@@ -131,6 +130,7 @@ class Kirilenko_lib:
         """Create leaf structure.
         
         Seems like to be rewritten in C.
+        DEPRECATED
         """
         self.leaf = defaultdict(list)
         self.f_min = self.S[:]
@@ -213,6 +213,7 @@ class Kirilenko_lib:
         # TODO: real-time nodes generation
         all_nodes = sorted(self.leaf.keys(), reverse=True)
         print("OVERALL {} NODES".format(len(all_nodes)))
+        
         for node in all_nodes:
             delta = self.X - node
             ways_to_node = self.__retrieve_node(self.leaf[node])
