@@ -308,7 +308,7 @@ uint64_t *get_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
                 uint64_t to_inf_avail= num_count[to_inf_ind].quantity;
                 // printf("to_inf: %llu ind: %llu \n", to_inf, to_inf_ind);
                 // printf("Used: %llu available: %llu\n", to_inf_spent, to_inf_avail);
-                // if (to_inf_avail > to_inf_spent){printf("HA-HA-HABITCH\n");}
+                if (to_inf_avail > to_inf_spent){printf("TODO THIS PART DINF EXISTS\n");}
             }
             // need to be carefull -> comparing signed vs unsigned
             if ((delta > 0) && (uint64_t)delta > sup){
@@ -456,11 +456,15 @@ uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size, uint64_t req_sum, bool
                     answer[sub_size] = 0;
                     free(try_res);
                     free(first_path);
+                    first_allocated = false;
                     free_all();
                     return answer;
                 }
+                free(try_res);
             }
+
         }
+        // allocating answer each time -> wasn't a bad idea?
         free(answer);
     }
     free_all();

@@ -135,26 +135,69 @@ class Kirilenko_lib:
         self.c_v = ctypes.c_bool(self._verbose)
         self.lib.solve_SSP.restype = ctypes.POINTER(ctypes.c_uint64)
 
+    @staticmethod
+    def __empty_node(v):
+        """Make empty node."""
+        return {"sum": v, "max_coords": set(), "min_coords": set()}
+
+    def __retrieve_node(self, node, once=False):
+        """Get paths to the node."""
+        answer = []
+        for elem in node:
+            shift = elem[0]
+            ind = elem[1]
+            dir_ = elem[2]
+            if dir_:
+                slice_ = tuple(sorted(self.f_max[elem[0]: elem[0] + elem[1]]))
+            else:
+                slice_ = tuple(sorted(self.f_min[elem[0]: elem[0] + elem[1]]))
+            answer.append(slice_)
+            if once:
+                return answer[0]
+        return set(answer)    
+
     def __make_leaf(self):
-        """Create leaf structure."""
-        self.leaf = defaultdict(Leaf_node)
+        """Create leaf structure.
+        
+        Seems like to be rewritten in C.
+        """
+        # self.leaf = defaultdict(Leaf_node)
+        # self.leaf = {}
+        self.leaf = defaultdict(list)
         self.f_min = self.S[:]
+        f_min_acc = accumulate_sum(self.f_min)
+        for i, _sum in enumerate(f_min_acc):
+            self.leaf[_sum].append((0, i + 1, False))
+            if _sum > self.X:
+                break
+
         self.f_min += self.f_min
         self.f_max = self.S[::-1]
+        f_max_acc = accumulate_sum(self.f_max)
+        for i, _sum in enumerate(f_max_acc):
+            if _sum > self.X:
+                break
+            self.leaf[_sum].append((0, i + 1, True))
+
         self.f_max += self.f_max
-        for shift in range(0, self.k):
-            f_max_acc = accumulate_sum(self.f_max[shift: shift + self.k])
-            f_min_acc = accumulate_sum(self.f_min[shift: shift + self.k])
+        for shift in range(1, self.k):
+            # tt = dt.now()
+            f_max_acc = shift_right(f_max_acc)
+            f_min_acc = shift_right(f_min_acc)
+            # print("Acc: {}".format(dt.now() - tt))
             for i, _sum in enumerate(f_max_acc):
-                self.leaf[_sum].value = _sum
-                self.leaf[_sum].max_coords.add((shift, i + 1))
+                if _sum > self.X:
+                    break
+                self.leaf[_sum].append((shift, i + 1, True))
+            # tt = dt.now()
             for i, _sum in enumerate(f_min_acc):
-                self.leaf[_sum].value = _sum
-                self.leaf[_sum].min_coords.add((shift, i + 1))
+                self.leaf[_sum].append((shift, i + 1, False))
+                if _sum > self.X:
+                    break
+            # print("Add: {}".format(dt.now() - tt))
         if self.X in self.leaf.keys():
             # exclude X in S
-            self.answer = self.leaf[self.X].retrieve(self.f_max, self.f_min, one=True)
-            # mask other methods
+            self.answer = self.__retrieve_node(self.leaf[self.X], once=True)
 
     def __call_lib(self, arr, X):
         """Call lib with the parameters given."""
@@ -184,9 +227,9 @@ class Kirilenko_lib:
             return self.answer
         # try naïve approach from 0
         self.__configure_lib()
-        # naive_ans = self.__call_lib(self.S, self.X)
-        # if naive_ans:
-        #     return naive_ans
+        naive_ans = self.__call_lib(self.S, self.X)
+        if naive_ans:
+            return naive_ans
         # ok, try going over the list
         all_nodes_ = list(self.leaf.keys())
         # delete nodes that are > X (== not exist)
@@ -200,20 +243,15 @@ class Kirilenko_lib:
         all_nodes = sorted(self.leaf.keys(), reverse=True)
         for node in all_nodes:
             delta = self.X - node
-            ways_to_node = self.leaf[node].retrieve(self.f_max, self.f_min)
-            s_2_candidates = Counter({k: v for k, v in self.elems_count.items() if k < delta})
+            ways_to_node = self.__retrieve_node(self.leaf[node])
             for way in ways_to_node:
                 way_count = Counter(way)
-                s_2_co = s_2_candidates - way_count
+                s_2_co = self.elems_count - way_count
                 s_2 = sorted(flatten([k for _ in range(v)] for k, v in s_2_co.items()))
                 if sum(s_2) < delta:
                     # unreachable
                     continue
-                # solver = SSP_naive(s_2, delta)
-                # sol = solver.get_answer()
                 sol = self.__call_lib(s_2, delta)
-                # print("C answer: {}".format(c_sol))
-                # print("Py answer: {}".format(sol))
                 if not sol:
                     continue
                 answer = sol + list(way)
@@ -240,6 +278,17 @@ def parse_args():
     return args
 
 
+def shift_right(arr):
+    """Shift accumulated sum."""
+    start = arr[0]
+    end = arr[-1]
+    del arr[0]
+    for i in range(len(arr)):
+        arr[i] -= start
+    arr.append(end)
+    return arr
+
+
 def accumulate_sum(lst):
     """Return accumulated sum list."""
     if len(lst) == 1:
@@ -260,7 +309,7 @@ def main(input_file, requested_sum, v, d):
     ssp = Kirilenko_lib(input_file, requested_sum, v, d)
     answer = ssp.solve_ssp()
     ans_str = str(sorted(answer, reverse=True)) if answer else "None"
-    print("The answer is:\n{}".format(ans_str))
+    print("Subset with sum {}:\n{}".format(sum(answer), ans_str))
 
 
 if __name__ == "__main__":
