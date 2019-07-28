@@ -19,35 +19,6 @@ __version__ = 0.1
 UINT64_SIZE = 18446744073709551615
 
 
-class Leaf_node:
-    """Mini-class to hold leaf nodes."""
-    def __init__(self):
-        """Initiate the node."""
-        self.value = 0
-        self.max_coords = set()
-        self.min_coords = set()
-
-    def __repr__(self):
-        """How to represent it."""
-        s = "Sum {} | Max coords: {} | Min_coords: {}"
-        return s.format(self.value, str(self.max_coords), str(self.min_coords))
-
-    def retrieve(self, f_max, f_min, one=False):
-        """Return subset under this node."""
-        answer = []
-        for elem in self.max_coords:
-            slice_ = tuple(sorted(f_max[elem[0]: elem[0] + elem[1]]))
-            answer.append(slice_)
-            if one:
-                return answer[0]
-        for elem in self.min_coords:
-            slice_ = tuple(sorted(f_min[elem[0]: elem[0] + elem[1]]))
-            answer.append(slice_)
-            if one:
-                return answer[0]
-        return set(answer)
-
-
 class Kirilenko_lib:
     """Class to solve Subset Sum Problem in natural numbers.
 
@@ -119,7 +90,7 @@ class Kirilenko_lib:
         self.k = len(numbers)
         self.__v("# Input array of size {}".format(self.k))
 
-    def __configure_lib(self):
+    def __configure_solver_lib(self):
         """Find the lib and configure it."""
         lib_ext = "so" if platform.system != "Windows" else "dll"
         lib_path = os.path.join(os.path.dirname(__file__), "bin",
@@ -161,15 +132,13 @@ class Kirilenko_lib:
         
         Seems like to be rewritten in C.
         """
-        # self.leaf = defaultdict(Leaf_node)
-        # self.leaf = {}
         self.leaf = defaultdict(list)
         self.f_min = self.S[:]
-        f_min_acc = accumulate_sum(self.f_min)
-        for i, _sum in enumerate(f_min_acc):
-            self.leaf[_sum].append((0, i + 1, False))
-            if _sum > self.X:
-                break
+        # f_min_acc = accumulate_sum(self.f_min)
+        # for i, _sum in enumerate(f_min_acc):
+        #     self.leaf[_sum].append((0, i + 1, False))
+        #     if _sum > self.X:
+        #         break
 
         self.f_min += self.f_min
         self.f_max = self.S[::-1]
@@ -181,25 +150,26 @@ class Kirilenko_lib:
 
         self.f_max += self.f_max
         for shift in range(1, self.k):
+            print(shift)
             # tt = dt.now()
             f_max_acc = shift_right(f_max_acc)
-            f_min_acc = shift_right(f_min_acc)
+            # f_min_acc = shift_right(f_min_acc)
             # print("Acc: {}".format(dt.now() - tt))
             for i, _sum in enumerate(f_max_acc):
                 if _sum > self.X:
                     break
                 self.leaf[_sum].append((shift, i + 1, True))
             # tt = dt.now()
-            for i, _sum in enumerate(f_min_acc):
-                self.leaf[_sum].append((shift, i + 1, False))
-                if _sum > self.X:
-                    break
+            # for i, _sum in enumerate(f_min_acc):
+            #     self.leaf[_sum].append((shift, i + 1, False))
+            #     if _sum > self.X:
+            #         break
             # print("Add: {}".format(dt.now() - tt))
         if self.X in self.leaf.keys():
             # exclude X in S
             self.answer = self.__retrieve_node(self.leaf[self.X], once=True)
 
-    def __call_lib(self, arr, X):
+    def __call_solver_lib(self, arr, X):
         """Call lib with the parameters given."""
         c_arr = (ctypes.c_uint64 * (len(arr) + 1))()
         c_arr[:-1] = arr
@@ -226,10 +196,10 @@ class Kirilenko_lib:
             # answer already found
             return self.answer
         # try naïve approach from 0
-        self.__configure_lib()
-        naive_ans = self.__call_lib(self.S, self.X)
-        if naive_ans:
-            return naive_ans
+        self.__configure_solver_lib()
+        # naive_ans = self.__call_solver_lib(self.S, self.X)
+        # if naive_ans:
+        #     return naive_ans
         # ok, try going over the list
         all_nodes_ = list(self.leaf.keys())
         # delete nodes that are > X (== not exist)
@@ -240,7 +210,9 @@ class Kirilenko_lib:
         del all_nodes_
 
         self.elems_count = Counter(self.S)
+        # TODO: real-time nodes generation
         all_nodes = sorted(self.leaf.keys(), reverse=True)
+        print("OVERALL {} NODES".format(len(all_nodes)))
         for node in all_nodes:
             delta = self.X - node
             ways_to_node = self.__retrieve_node(self.leaf[node])
@@ -251,7 +223,7 @@ class Kirilenko_lib:
                 if sum(s_2) < delta:
                     # unreachable
                     continue
-                sol = self.__call_lib(s_2, delta)
+                sol = self.__call_solver_lib(s_2, delta)
                 if not sol:
                     continue
                 answer = sol + list(way)
@@ -282,11 +254,9 @@ def shift_right(arr):
     """Shift accumulated sum."""
     start = arr[0]
     end = arr[-1]
-    del arr[0]
-    for i in range(len(arr)):
-        arr[i] -= start
-    arr.append(end)
-    return arr
+    ans = [e - start for e in arr[1:]]
+    ans.append(end)
+    return ans
 
 
 def accumulate_sum(lst):
