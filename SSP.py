@@ -138,21 +138,31 @@ class Kirilenko_lib:
         """Get answer."""
         if self.answer is not None:
             # answer already found
+            self.__v("# Answer is obvious")
             return self.answer
         # try naïve approach from 0
         self.__configure_solver_lib()
         naive_ans = self.__call_solver_lib(self.S, self.X) if self._naive else None
+        self.__v("# Trying naïve approach first...") if self._naive else None
         if naive_ans:
-            return naive_ans
+            self.__v("# Naïve approach returned the answer")
+            self.answer = naive_ans
+            return self.answer
         # ok, try going over the list
         self.elems_count = Counter(self.S)
         f_max_acc = accumulate_sum(self.f_max)
         f_max_len = len(f_max_acc)
+        already_checked = set()
+
         for shift in range(self.k):
             self.__v("# Trying shift {}".format(shift))
             for i, node in enumerate(f_max_acc[::-1]):
+                if node in already_checked:
+                    print("SKIPPED {}".format(node))
+                    continue
+                already_checked.add(node)
                 ind = f_max_len - i
-                print("# shift {} index {}".format(shift, ind))
+                self.__v("# shift {} index {}".format(shift, ind))
                 delta = self.X - node
                 # ways_to_node = self.__retrieve_node(self.leaf[node])
                 way_to_node = self.f_max[shift: shift + ind]
@@ -165,8 +175,8 @@ class Kirilenko_lib:
                 sol = self.__call_solver_lib(s_2, delta)
                 if not sol:
                     continue
-                answer = sol + list(way_to_node)
-                return answer
+                self.answer = sol + list(way_to_node)
+                return self.answer
             f_max_acc = shift_right(f_max_acc)
 
 
@@ -226,7 +236,7 @@ def main(input_file, requested_sum, v, dens, deep, naive):
     answer = ssp.solve_ssp()
     ans_str = str(sorted(answer, reverse=True)) if answer else "None"
     assert sum(answer) == requested_sum
-    print("Subset with sum {}:\n{}".format(sum(answer), ans_str))
+    print("# Answer with sum {}:\n{}".format(sum(answer), ans_str))
 
 
 if __name__ == "__main__":

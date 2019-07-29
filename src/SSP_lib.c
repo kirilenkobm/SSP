@@ -251,7 +251,7 @@ uint64_t *get_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
     for (uint64_t i = 0; i < _l_f_arr_size; i++){_f_max[i] = f_max[i];}
 
     // values I need insude
-    uint64_t prev_sum = 0;
+    __uint128_t prev_sum = 0;
     int64_t delta = 0;  // might be negative!
     uint64_t sup = 0;
     uint64_t inf = 0;
@@ -413,7 +413,7 @@ uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size,
             if (pointed == 0) {continue;}
             pointed_ind = _elem_search(0, (__int128_t)uniq_num, pointed);
             // todo: check if it is necessary
-            // try hardcoded possible = false
+            // if deep = false, will not enter this
             bool possible = deep;
             while (possible)
             // decrease while decreseable  
