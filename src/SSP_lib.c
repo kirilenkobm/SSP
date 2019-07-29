@@ -17,10 +17,10 @@ kirilenkobm@gmail.com
 // global variables
 bool v = false;
 bool first_allocated = false;
-__uint128_t *f_max;
-__uint128_t *f_min;
-__uint128_t *f_max_a;
-__uint128_t *f_min_a;
+uint64_t *f_max;
+uint64_t *f_min;
+uint64_t *f_max_a;
+uint64_t *f_min_a;
 uint64_t *first_path;
 Num_q *num_count;
 uint64_t uniq_num = 0;
@@ -61,9 +61,9 @@ void sigint_handler(int sig_num)
 
 
 // create accumulated sum array
-__uint128_t *accumulate_sum(__uint128_t *arr, uint64_t arr_size)
+uint64_t *accumulate_sum(uint64_t *arr, uint64_t arr_size)
 {
-    __uint128_t *res = (__uint128_t*)malloc(arr_size * sizeof(__uint128_t));
+    uint64_t *res = (uint64_t*)malloc(arr_size * sizeof(uint64_t));
     res[0] = arr[0];
     for (uint64_t i = 1; i < arr_size; i++)
     {
@@ -74,7 +74,7 @@ __uint128_t *accumulate_sum(__uint128_t *arr, uint64_t arr_size)
 
 
 // count elements, create array of structs
-Num_q *count_elements(__uint128_t *arr, uint64_t arr_size, uint64_t *q)
+Num_q *count_elements(uint64_t *arr, uint64_t arr_size, uint64_t *q)
 {
     Num_q *res = (Num_q*)malloc(arr_size * sizeof(Num_q));
     // the first element is 0 -> skip it
@@ -122,12 +122,13 @@ Sz_out get_subset_sizes(uint64_t arr_len, uint64_t req_sum)
     uint64_t sup = 0;
     uint64_t inf = 0;
 
-    for (uint64_t i = 0; i < arr_len; i++)
+    for (uint64_t i = 1; i < arr_len; i++)
     // try every possible size
     {
-        sub_size = i + 1;
+        sub_size = i;
         sup = f_max_a[i];
         inf = f_min_a[i];
+        // printf("Ssize %llu inf %llu sup %llu X %llu\n", sub_size, inf, sup, req_sum);
         if (req_sum == sup){
             // need to return path to sup then
             res.ind_max = i + 1;
@@ -136,6 +137,7 @@ Sz_out get_subset_sizes(uint64_t arr_len, uint64_t req_sum)
             res.ind_min = i + 1;
             return res;
         } else if ((inf < req_sum) && (req_sum < sup)){
+            // printf("Added %llu\n", sub_size);
             res.sub_sizes[res.sz_count] = sub_size;
             res.sz_count++;
             found = true;
@@ -251,7 +253,7 @@ uint64_t *get_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
     for (uint64_t i = 0; i < _l_f_arr_size; i++){_f_max[i] = f_max[i];}
 
     // values I need insude
-    __uint128_t prev_sum = 0;
+    uint64_t prev_sum = 0;
     int64_t delta = 0;  // might be negative!
     uint64_t sup = 0;
     uint64_t inf = 0;
@@ -298,7 +300,7 @@ uint64_t *get_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
                 // unreachable
                 break;
             } else if ((delta < 0) || (uint64_t)delta < inf){
-                // get next value, skip iter
+                // printf("Delta %lld inf %llu\n", delta, inf);
                 cur_ind++;
                 cur_val = num_count[cur_ind].number;
                 continue;
@@ -335,11 +337,11 @@ uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size,
     signal(SIGINT, sigint_handler);
     verbose("Entered shared library.\n");
     uint64_t arr_size = _arr_size;
-    size_t f_max_min_size = sizeof(__uint128_t) * (arr_size + CHUNK);
+    size_t f_max_min_size = sizeof(uint64_t) * (arr_size + CHUNK);
     uint64_t *dummy = (uint64_t*)calloc(CHUNK, sizeof(uint64_t));
     // the numbers were actually pre-sorted, so f_min is defined just for explicity
-    f_max = (__uint128_t*)malloc(f_max_min_size);
-    f_min = (__uint128_t*)malloc(f_max_min_size);
+    f_max = (uint64_t*)malloc(f_max_min_size);
+    f_min = (uint64_t*)malloc(f_max_min_size);
     f_max[0] = 0;
     f_min[0] = 0;
     for (uint64_t i = 0; i < arr_size; i++){f_min[i + 1] = in_arr[i];}
@@ -352,6 +354,10 @@ uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size,
     // now count the elements
     uniq_num = 0;
     num_count = count_elements(f_max, arr_size, &uniq_num);
+    // for (uint64_t i = 0; i < uniq_num; i++){
+    //     printf("%llu %llu | ", num_count[i].number, num_count[i].quantity);
+    // }
+    // printf("\n");
     verbose("# %llu unique numbers in the dataset\n", uniq_num);
 
     // get suitable subset sizes
@@ -360,7 +366,7 @@ uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size,
         // weird but possible; return empty array
         return dummy;
     }
-    verbose("Found %llu subset sizes\n", s_sizes.sz_count);
+    printf("Found %llu subset sizes\n", s_sizes.sz_count);
     // check if result was not on f_max or f_min
     if (s_sizes.ind_max != 0){
         // TODO: this scenario was not tested!

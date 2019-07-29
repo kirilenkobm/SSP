@@ -80,7 +80,9 @@ class Kirilenko_lib:
         if self._get_d:
             # we were reqested to print dataset density
             dens = arr_len / log(max_elem, 2)
+            max_min_diff = (max_elem - min_elem) / max_elem
             print("# Dataset density is:\n# {}".format(dens))
+            print("# (max - min) / max is:\n# {}".format(max_min_diff))
         if tot_sum > UINT64_SIZE:
             sys.exit("Error: overall input sum should not exceed "
                      "the uint64_t capacity, got {}".format(tot_sum))
@@ -156,19 +158,18 @@ class Kirilenko_lib:
         self.elems_count = Counter(self.S)
         f_max_acc = accumulate_sum(self.f_max)
         f_max_len = len(f_max_acc)
-        already_checked = set()
 
         for shift in range(self.k):
             if self._shifts_lim > 0 and shift - 1 >= self._shifts_lim:
                 self.answer = None
                 return self.answer
-            self.__v("# Trying shift {}".format(shift))
+            self.__v("# Trying shift {} / {}".format(shift, self.k))
+            # try on f_max
             for i, node in enumerate(f_max_acc[::-1]):
-                if node in already_checked:
+                if node > self.X:
                     continue
-                already_checked.add(node)
                 ind = f_max_len - i
-                self.__v("# shift {} index {}".format(shift, ind))
+                # self.__v("# shift {}/{} index {}".format(shift, self.k, ind), end="\r")
                 delta = self.X - node
                 # ways_to_node = self.__retrieve_node(self.leaf[node])
                 way_to_node = self.f_max[shift: shift + ind]
@@ -184,7 +185,7 @@ class Kirilenko_lib:
                 self.answer = sol + list(way_to_node)
                 return self.answer
             f_max_acc = shift_right(f_max_acc)
-
+            # f_min_acc = shift_right(f_min_acc)
 
 def parse_args():
     """Parse and check args."""

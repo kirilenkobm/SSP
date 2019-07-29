@@ -38,10 +38,10 @@ void verbose(const char * restrict format, ...);
 void sigint_handler(int sig_num);
 
 // create accumulated sum array
-__uint128_t *accumulate_sum(__uint128_t *arr, uint64_t arr_size);
+uint64_t *accumulate_sum(uint64_t *arr, uint64_t arr_size);
 
 // count elements, create array of structs
-Num_q *count_elements(__uint128_t *arr, uint64_t arr_size, uint64_t *q);
+Num_q *count_elements(uint64_t *arr, uint64_t arr_size, uint64_t *q);
 
 // get subset sizes to check
 Sz_out get_subset_sizes(uint64_t arr_len, uint64_t req_sum);
