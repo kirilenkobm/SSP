@@ -11,6 +11,8 @@ kirilenkobm@gmail.com
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <signal.h>
+
 
 typedef struct
 {
