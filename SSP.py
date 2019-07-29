@@ -25,13 +25,15 @@ class Kirilenko_lib:
     k - number of elements in the set
     X - sum of subset s in S
     """
-    def __init__(self, in_file, req_sum, v=False, d=False):
+    def __init__(self, in_file, req_sum, v=False, d=False, deep=False, naive=False):
         """Initiate the class."""
         self.in_file = in_file
         self.X = req_sum
         self._verbose = v
         self._get_d = d
         self.answer = None
+        self._deep = deep
+        self._naive = naive
         self.__make_input_arr()
         self.f_min = self.S[:]
         self.f_min += self.f_min
@@ -104,8 +106,10 @@ class Kirilenko_lib:
         self.lib.solve_SSP.argtypes = [ctypes.POINTER(ctypes.c_uint64),
                                        ctypes.c_uint64,
                                        ctypes.c_uint64,
+                                       ctypes.c_bool,
                                        ctypes.c_bool]
         self.c_v = ctypes.c_bool(self._verbose)
+        self.c_d = ctypes.c_bool(self._deep)
         self.lib.solve_SSP.restype = ctypes.POINTER(ctypes.c_uint64)
 
     def __call_solver_lib(self, arr, X):
@@ -117,7 +121,8 @@ class Kirilenko_lib:
         result = self.lib.solve_SSP(c_arr,
                                     c_arr_size,
                                     c_X,
-                                    self.c_v)
+                                    self.c_v,
+                                    self.c_d)
         # get everything except 0; check the answer
         _answer = []
         for elem in result:
@@ -136,15 +141,18 @@ class Kirilenko_lib:
             return self.answer
         # try naïve approach from 0
         self.__configure_solver_lib()
-        naive_ans = self.__call_solver_lib(self.S, self.X)
+        naive_ans = self.__call_solver_lib(self.S, self.X) if self._naive else None
         if naive_ans:
             return naive_ans
         # ok, try going over the list
         self.elems_count = Counter(self.S)
         f_max_acc = accumulate_sum(self.f_max)
+        f_max_len = len(f_max_acc)
         for shift in range(self.k):
-            for i, node in enumerate(f_max_acc):
-                ind = i + 1
+            self.__v("# Trying shift {}".format(shift))
+            for i, node in enumerate(f_max_acc[::-1]):
+                ind = f_max_len - i
+                print("# shift {} index {}".format(shift, ind))
                 delta = self.X - node
                 # ways_to_node = self.__retrieve_node(self.leaf[node])
                 way_to_node = self.f_max[shift: shift + ind]
@@ -170,10 +178,15 @@ def parse_args():
     app.add_argument("requested_sum", type=int, help="Sum requested")
     app.add_argument("--subset_size", "-s", type=int, default=0,
                     help="Specify particular size of subset, look only for this")
-    app.add_argument("--get_density", "-d", action="store_true", dest="get_density",
+    app.add_argument("--get_density", "--gd", action="store_true", dest="get_density",
                      help="Compute dataset density")
     app.add_argument("--verbose", "-v", action="store_true", dest="verbose",
                      help="Shpw verbose messages.")
+    app.add_argument("--deep", "-d", action="store_true", dest="deep",
+                     help="Include deep target search, drastically increases "
+                          "the runtime")
+    app.add_argument("--naive", "-n", action="store_true", dest="naive",
+                     help="Try to find result without the lead")
     if len(sys.argv) < 3:
         app.print_help()
         sys.exit()
@@ -207,15 +220,17 @@ def flatten(lst):
     return [item for sublist in lst for item in sublist]
 
 
-def main(input_file, requested_sum, v, d):
+def main(input_file, requested_sum, v, dens, deep, naive):
     """Entry point."""
-    ssp = Kirilenko_lib(input_file, requested_sum, v, d)
+    ssp = Kirilenko_lib(input_file, requested_sum, v, dens, deep, naive)
     answer = ssp.solve_ssp()
     ans_str = str(sorted(answer, reverse=True)) if answer else "None"
+    assert sum(answer) == requested_sum
     print("Subset with sum {}:\n{}".format(sum(answer), ans_str))
 
 
 if __name__ == "__main__":
     args = parse_args()
     main(args.input, args.requested_sum,
-         args.verbose, args.get_density)
+         args.verbose, args.get_density,
+         args.deep, args.naive)
