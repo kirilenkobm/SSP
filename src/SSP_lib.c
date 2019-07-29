@@ -14,15 +14,13 @@ kirilenkobm@gmail.com
 #define CHUNK 5
 
 
-
-
 // global variables
 bool v = false;
 bool first_allocated = false;
-uint64_t *f_max;
-uint64_t *f_min;
-uint64_t *f_max_a;
-uint64_t *f_min_a;
+__uint128_t *f_max;
+__uint128_t *f_min;
+__uint128_t *f_max_a;
+__uint128_t *f_min_a;
 uint64_t *first_path;
 Num_q *num_count;
 uint64_t uniq_num = 0;
@@ -63,9 +61,9 @@ void sigint_handler(int sig_num)
 
 
 // create accumulated sum array
-uint64_t *accumulate_sum(uint64_t *arr, uint64_t arr_size)
+__uint128_t *accumulate_sum(__uint128_t *arr, uint64_t arr_size)
 {
-    uint64_t *res = (uint64_t*)malloc(arr_size * sizeof(uint64_t));
+    __uint128_t *res = (__uint128_t*)malloc(arr_size * sizeof(__uint128_t));
     res[0] = arr[0];
     for (uint64_t i = 1; i < arr_size; i++)
     {
@@ -76,7 +74,7 @@ uint64_t *accumulate_sum(uint64_t *arr, uint64_t arr_size)
 
 
 // count elements, create array of structs
-Num_q *count_elements(uint64_t *arr, uint64_t arr_size, uint64_t *q)
+Num_q *count_elements(__uint128_t *arr, uint64_t arr_size, uint64_t *q)
 {
     Num_q *res = (Num_q*)malloc(arr_size * sizeof(Num_q));
     // the first element is 0 -> skip it
@@ -337,11 +335,11 @@ uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size,
     signal(SIGINT, sigint_handler);
     verbose("Entered shared library.\n");
     uint64_t arr_size = _arr_size;
-    size_t f_max_min_size = sizeof(uint64_t) * (arr_size + CHUNK);
+    size_t f_max_min_size = sizeof(__uint128_t) * (arr_size + CHUNK);
     uint64_t *dummy = (uint64_t*)calloc(CHUNK, sizeof(uint64_t));
     // the numbers were actually pre-sorted, so f_min is defined just for explicity
-    f_max = (uint64_t*)malloc(f_max_min_size);
-    f_min = (uint64_t*)malloc(f_max_min_size);
+    f_max = (__uint128_t*)malloc(f_max_min_size);
+    f_min = (__uint128_t*)malloc(f_max_min_size);
     f_max[0] = 0;
     f_min[0] = 0;
     for (uint64_t i = 0; i < arr_size; i++){f_min[i + 1] = in_arr[i];}
