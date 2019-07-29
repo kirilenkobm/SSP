@@ -71,23 +71,23 @@ The main part of the software is implemented in both Python and C.
 C code is designed to be compiled as a shared library.
 In turn, Python script "SSP.py" is wrapped around the shared library, taking care of argument parsing and verification of input.
 Actually, the compiled library might be simply used individually, apart from the python script.
-The minimal input for the Python wrapper is a text file with an integer number at each line (might be stdin as well) and an integer, representing the target. To call shared library, one also needs another parameter - expected subset size.
+The minimal input for the Python wrapper is a text file with an integer number at each line (might be stdin as well) and an integer, representing the target.
 
 The limitations are:
 
 - The C-written path actively uses uint64_t data type, maximal capacity of which is 18446744073709551615, the majority of limitations are closely related to this number.
 
-- All input numbers must be positive integers, zeros are allowed but don't make any sense in the context of problem
+- All input numbers must be positive integers, zeros are allowed but don't make any sense in the context of problem.
 
 - Number of input elements should not exceed the uint64_t maximal capacity.
 
-- Each input number also should not exceed the uint64_t capacity
+- Each input number also should not exceed the uint64_t capacity.
 
-- The most regrettable restriction - input array sum also should not exceed the uint64_t capacity due to the algorithm design
+- The most regrettable restriction - input array sum also should not exceed the uint64_t capacity due to the algorithm design. Shifting of this limit to __uint128_t capacity is planned.
 
-- Requested sum cannot be smaller than the smallest element of array
+- Requested sum cannot be smaller than the smallest element of array.
 
-- Also, the target should not be bigger than he overall sum of input array
+- Also, the target should not be bigger than he overall sum of input array.
 
 Master script SSP.py and C code don't require any external libraries.
 Libraries required to call "generate_input.py" and "perf_tests.ipynb", are listed in the requirements.txt file.
@@ -103,7 +103,7 @@ https://arxiv.org/blalba
 Complexity in the worst case:
 
 ```math
-O(N^4)
+O(N^5)
 ```
 
 To be done

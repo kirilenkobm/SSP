@@ -11,3 +11,4 @@ performance/answers
 performance/inputs
 _backup/*
 _previous/*
+.DS_Store
