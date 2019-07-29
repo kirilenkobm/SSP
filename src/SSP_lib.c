@@ -10,24 +10,10 @@ kirilenkobm@gmail.com
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdarg.h>
-// #include "SSP_lib.h"
+#include "SSP_lib.h"
 #define CHUNK 5
 
 
-typedef struct
-{
-    uint64_t number;
-    uint64_t quantity;
-} Num_q;
-
-
-typedef struct
-{
-    uint64_t *sub_sizes;
-    uint64_t sz_count;
-    uint64_t ind_max;
-    uint64_t ind_min;
-} Sz_out;
 
 
 // global variables
@@ -224,7 +210,6 @@ uint64_t arr_sum(uint64_t *arr, uint64_t up_to)
 
 // __int128_t just to avoid overflows, maybe an overkill
 uint64_t _elem_search(__int128_t l, __int128_t r, uint64_t w)
-// use the same parameter TWICE!
 {
     if (r >= l)
     {
@@ -345,7 +330,8 @@ uint64_t *get_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
 
 
 // shared library entry point
-uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size, uint64_t req_sum, bool _v, bool deep)
+uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size,
+                    uint64_t req_sum, bool _v, bool deep)
 {
     // allocate f_max and f_min
     signal(SIGINT, sigint_handler);
