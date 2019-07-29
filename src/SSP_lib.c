@@ -284,17 +284,17 @@ uint64_t *get_path(uint64_t sub_size, uint64_t *prev_path, uint64_t prev_p_len,
             points_left = pos_left - (i + 1);
             sup = f_max_a[points_left];
             inf = f_min_a[points_left];
-            uint64_t to_inf = prev_sum - inf;
-            uint64_t to_inf_ind = _elem_search(0, (__int128_t)uniq_num, to_inf);
-            if (to_inf_ind != uniq_num)
+            // uint64_t to_inf = prev_sum - inf;
+            // uint64_t to_inf_ind = _elem_search(0, (__int128_t)uniq_num, to_inf);
+            // if (to_inf_ind != uniq_num)
             // we can fall down to fmin and that's it
-            {
-                uint64_t to_inf_spent = path_count[to_inf_ind].quantity;
-                uint64_t to_inf_avail= num_count[to_inf_ind].quantity;
+            // {
+            //     uint64_t to_inf_spent = path_count[to_inf_ind].quantity;
+            //     uint64_t to_inf_avail= num_count[to_inf_ind].quantity;
                 // printf("to_inf: %llu ind: %llu \n", to_inf, to_inf_ind);
                 // printf("Used: %llu available: %llu\n", to_inf_spent, to_inf_avail);
                 // if (to_inf_avail > to_inf_spent){printf("TODO THIS PART DINF EXISTS\n");}
-            }
+            // }
             // need to be carefull -> comparing signed vs unsigned
             if ((delta > 0) && (uint64_t)delta > sup){
                 // unreachable
@@ -366,7 +366,7 @@ uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size,
         // weird but possible; return empty array
         return dummy;
     }
-    printf("Found %llu subset sizes\n", s_sizes.sz_count);
+    verbose("Found %llu subset sizes\n", s_sizes.sz_count);
     // check if result was not on f_max or f_min
     if (s_sizes.ind_max != 0){
         // TODO: this scenario was not tested!

@@ -80,9 +80,7 @@ class Kirilenko_lib:
         if self._get_d:
             # we were reqested to print dataset density
             dens = arr_len / log(max_elem, 2)
-            max_min_diff = (max_elem - min_elem) / max_elem
             print("# Dataset density is:\n# {}".format(dens))
-            print("# (max - min) / max is:\n# {}".format(max_min_diff))
         if tot_sum > UINT64_SIZE:
             sys.exit("Error: overall input sum should not exceed "
                      "the uint64_t capacity, got {}".format(tot_sum))
