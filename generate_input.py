@@ -31,6 +31,8 @@ def parse_args():
     app.add_argument("std_scale", type=int)
     app.add_argument("samples", type=int, help="Num of samples")
     app.add_argument("name_templ", help="Template for output filename")
+    app.add_argument("--uniform", "-u", action="store_true", dest="uniform",
+                     help="Create uniformly distributed set.")
     app.add_argument("--versbose", "-v", action="store_true", dest="versbose",
                      help="Show verbose messages")
     if len(sys.argv) < 5:
@@ -59,19 +61,27 @@ def main():
     for s in range(args.samples):
         # TODO: also try uniform distribution, make an option
         eprint("# Sample {} / {} in progress".format(s + 1, args.samples))
-        rnd_sample = np.random.normal(scale=args.std_scale, size=args.N)
+        if not args.uniform:
+            rnd_sample = np.random.normal(scale=args.std_scale, size=args.N)
+            rnd_sample_int = [int(x) + 1 for x in abs(np.round(rnd_sample))]
+        else:
+            low = args.std_scale / 100
+            high = args.std_scale
+            rnd_sample = np.random.uniform(low=low, high=high, size=args.N)
+            rnd_sample_int = [int(x) + 1 for x in abs(np.round(rnd_sample))]
         eprint("# Got random numbers")
-        rnd_sample_int = [int(x) + 1 for x in abs(np.round(rnd_sample))]
         sum_forms = sorted(rnd_sample_int[:args.n], reverse=True)
         ans_sum = sum(sum_forms)
         filename = "{}_{}".format(s, args.name_templ)
         in_path = os.path.join(INPUTS_DIR, filename)
         ans_path = os.path.join(ANSWERS_DIR, filename)
+        _distr = "Norm" if not args.uniform else "Uni"
         eprint("# Saving the results...")
         with open(ans_path, "w") as f:
             f.write("{}\n".format(str(sum_forms)))
             f.write("Sum = {}\n".format(ans_sum))
             f.write("Sum_len = {}\n".format(len(sum_forms)))
+            f.write("Distr = {}\n".format(_distr))
         in_str = [str(n) for n in rnd_sample_int]
         with open(in_path, "w") as f:
             f.write("\n".join(in_str) + "\n")
