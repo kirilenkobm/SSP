@@ -41,6 +41,9 @@ class Kirilenko_lib:
         self.f_max = self.S[::-1]
         self.f_max += self.f_max
         self.elems_count = Counter()
+        self._lib_calls = 0
+        self._shifts_num = 0
+        self._on_leaf = False
 
     @staticmethod
     def __do_nothing(*args):
@@ -118,6 +121,7 @@ class Kirilenko_lib:
 
     def __call_solver_lib(self, arr, X):
         """Call lib with the parameters given."""
+        self._lib_calls += 1
         c_arr = (ctypes.c_uint64 * (len(arr) + 1))()
         c_arr[:-1] = arr
         c_arr_size = ctypes.c_uint64(len(arr))
@@ -155,9 +159,11 @@ class Kirilenko_lib:
         # ok, try going over the list
         self.elems_count = Counter(self.S)
         f_max_acc = accumulate_sum(self.f_max)
+        # f_min_acc = accumulate_sum(self.f_min)
         f_max_len = len(f_max_acc)
 
         for shift in range(self.k):
+            self._shifts_num += 1
             if self._shifts_lim > 0 and shift - 1 >= self._shifts_lim:
                 self.answer = None
                 return self.answer
@@ -166,6 +172,9 @@ class Kirilenko_lib:
             for i, node in enumerate(f_max_acc[::-1]):
                 if node > self.X:
                     continue
+                elif node == self.X:
+                    self._on_leaf = True
+                    return self.f_max[shift: shift + ind]
                 ind = f_max_len - i
                 # self.__v("# shift {}/{} index {}".format(shift, self.k, ind), end="\r")
                 delta = self.X - node
@@ -173,7 +182,7 @@ class Kirilenko_lib:
                 way_to_node = self.f_max[shift: shift + ind]
                 way_count = Counter(way_to_node)
                 s_2_co = self.elems_count - way_count
-                s_2 = sorted(flatten([k for _ in range(v)] for k, v in s_2_co.items()))
+                s_2 = sorted(flatten([k for _ in range(v)] for k, v in s_2_co.items() if k < delta))
                 if sum(s_2) < delta:
                     # unreachable
                     continue
@@ -204,6 +213,7 @@ def parse_args():
                      help="Try to find result without the lead")
     app.add_argument("--verbose", "-v", action="store_true", dest="verbose",
                      help="Shpw verbose messages.")
+    app.add_argument("--ext_out", "-e", action="store_true", dest="ext_out")
     if len(sys.argv) < 3:
         app.print_help()
         sys.exit()
@@ -237,8 +247,9 @@ def flatten(lst):
     return [item for sublist in lst for item in sublist]
 
 
-def main(input_file, requested_sum, v, dens, deep, naive, shifts_lim):
+def main(input_file, requested_sum, v, dens, deep, naive, shifts_lim, ext_out):
     """Entry point."""
+    t0 = dt.now()
     ssp = Kirilenko_lib(input_file, requested_sum, v,
                         dens, deep, naive, shifts_lim)
     answer = ssp.solve_ssp()
@@ -246,6 +257,11 @@ def main(input_file, requested_sum, v, dens, deep, naive, shifts_lim):
     if answer:
         assert sum(answer) == requested_sum
     print("# Answer is:\n{}".format(ans_str))
+    if ext_out:
+        print("# Lib calls: {}".format(ssp._lib_calls))
+        print("# Commited shifts: {}".format(ssp._shifts_num))
+        print("# Elapsed time: {}".format(dt.now() - t0))
+        print("# Answer on leaf node: {}".format(ssp._on_leaf))
 
 
 if __name__ == "__main__":
@@ -253,4 +269,4 @@ if __name__ == "__main__":
     main(args.input, args.requested_sum,
          args.verbose, args.get_density,
          args.deep, args.naive, 
-         args.shifts_num)
+         args.shifts_num, args.ext_out)

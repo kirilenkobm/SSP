@@ -57,6 +57,8 @@ Inputs may be generated with generate_input.py
 
 - src/ - source files written in C.
 
+- src_2/ - source code in development step to replace everything in C.
+
 - bin/ - folder to hold combiled shared library.
 
 - py_replacement/ - temporary Python implementation.
@@ -96,7 +98,7 @@ Libraries required to call "generate_input.py" and "perf_tests.ipynb", are liste
 
 Algorithm explained in detail at:
 
-https://arxiv.org/blalba
+[AM ARTICLE COMING SOON]
 
 ## Performance measurements
 
