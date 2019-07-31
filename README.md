@@ -17,27 +17,13 @@ Here, you can find an algorithm that effectively solves this problem in natural 
 
 ## Usage
 
-### On Linux/MacOS
+Just:
 
 ```shell
 git clone git@gitlab.com:kirilenkobm/ssp.git
 cd ssp
-make
-./SSP.py test_input/3.txt 15
+./_test.sh
 ```
-
-### On Windows
-
-```powershell
-git clone git@gitlab.com:kirilenkobm/ssp.git
-cd ssp
-.\win_make.bat
-python .\SSP.py test_input\3.txt 15
-```
-
-The answer for 3.txt should be [8, 3, 3, 1]
-
-Inputs may be generated with generate_input.py
 
 ## Contents
 
