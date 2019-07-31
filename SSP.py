@@ -25,7 +25,8 @@ class SSP_lib:
     k - number of elements in the set
     X - sum of subset s in S
     """
-    def __init__(self, in_file, req_sum, v=False, d=False, deep=False, naive=False, shifts_lim=0, ext_v=False):
+    def __init__(self, in_file, req_sum, v=False, d=False, deep=False,
+                 naive=False, shifts_lim=0, ext_v=False, t_ans=None):
         """Initiate the class."""
         self.in_file = in_file
         self.X = req_sum
@@ -37,6 +38,8 @@ class SSP_lib:
         self._naive = naive
         self._ext_v = ext_v
         self.__make_input_arr()
+        self._t_ans = t_ans
+        self._trace_answer()
         self.f_min = self.S[:]
         self.f_min += self.f_min
         self.f_max = self.S[::-1]
@@ -100,7 +103,24 @@ class SSP_lib:
             return
         self.S = numbers
         self.k = len(numbers)
-        self.__v("# Input array of size {}".format(self.k))
+        self.__v("# /V: Input array of size {}".format(self.k))
+
+    def _trace_answer(self):
+        """If set, load real answer."""
+        self.ans_incl = 0
+        self.ans_non_incl = 0
+        if self._t_ans is None:
+            self.answer = set()
+            return
+        f = open(self._t_ans, "r")
+        # read produced by generate_input answer file
+        for line in f:
+            if not line.startswith("["):
+                continue
+            self.real_answer = set(int(x) for x in line[1:-2].split(", "))
+            break
+        f.close()
+
 
     def __configure_solver_lib(self):
         """Find the lib and configure it."""
@@ -148,20 +168,20 @@ class SSP_lib:
         """Get answer."""
         if self.answer is not None:
             # answer already found
-            self.__v("# Answer is obvious")
+            self.__v("# /V: Answer is obvious")
             return self.answer
         # try naïve approach from 0
         self.__configure_solver_lib()
         naive_ans = self.__call_solver_lib(self.S, self.X, self._ext_v) if self._naive else None
-        self.__v("# Trying naïve approach first...") if self._naive else None
+        self.__v("# /V: Trying naïve approach first...") if self._naive else None
         if naive_ans:
-            self.__v("# Naïve approach returned the answer")
+            self.__v("# /V: Naïve approach returned the answer")
             self.answer = naive_ans
             return self.answer
         # ok, try going over the list
         self.elems_count = Counter(self.S)
         f_max_acc = accumulate_sum(self.f_max)
-        # f_min_acc = accumulate_sum(self.f_min)
+        f_min_acc = accumulate_sum(self.f_min)
         f_max_len = len(f_max_acc)
         shift_num = self.k
 
@@ -172,7 +192,7 @@ class SSP_lib:
                 return self.answer
             self.__v("# Trying shift {} / {}".format(shift, shift_num))
             # try on f_max
-            for i, node in enumerate(f_max_acc[::-1]):
+            for i, node in enumerate(f_min_acc[::-1]):
                 if node > self.X:
                     continue
                 elif node == self.X:
@@ -193,13 +213,22 @@ class SSP_lib:
                 elif s_2_sum == delta:
                     self.answer = s_2 + list(way_to_node)
                     return self.answer
+                s_2_d = len(s_2) / log(max(s_2), 2)
+                eprint("# /GD: Subset density: {}".format(s_2_d)) if self._get_d else None
+                s_1_real_ans_ = set(way_to_node).difference(self.real_answer)
+                if s_1_real_ans_:
+                    self.ans_non_incl += 1
+                else:  # S1 entirely consists on the real answer
+                    eprint("# /A: Subset contains answer at density {}".format(s_2_d)) \
+                        if self._t_ans else None
+                    self.ans_incl += 1
                 sol = self.__call_solver_lib(s_2, delta)
                 if not sol:
                     continue
                 self.answer = sol + list(way_to_node)
                 return self.answer
             f_max_acc = shift_right(f_max_acc)
-            # f_min_acc = shift_right(f_min_acc)
+            f_min_acc = shift_right(f_min_acc)
 
 
 def parse_args():
@@ -222,6 +251,9 @@ def parse_args():
     app.add_argument("--verbose", "-v", action="store_true", dest="verbose",
                      help="Shpw verbose messages.")
     app.add_argument("--ext_out", "-e", action="store_true", dest="ext_out")
+    app.add_argument("--t_ans", "-a", default=None, help="If the file with "
+                     "real answer given, check how many subsets include it, "
+                     "compatible with generate_input.py output.")
     if len(sys.argv) < 3:
         app.print_help()
         sys.exit()
@@ -255,27 +287,36 @@ def flatten(lst):
     return [item for sublist in lst for item in sublist]
 
 
-def main(input_file, requested_sum, v, dens, deep, naive, shifts_lim, ext_out):
+def eprint(msg, end="\n"):
+    """Print for stderr."""
+    sys.stderr.write(msg + end)
+
+
+def main(input_file, requested_sum, v, dens, deep, naive, t_ans, shifts_lim, ext_out):
     """Entry point."""
     t0 = dt.now()
     ssp = SSP_lib(input_file, requested_sum, v,
                   dens, deep, naive, shifts_lim,
-                  ext_out)
+                  ext_out, t_ans)
     answer = ssp.solve_ssp()
     ans_str = str(sorted(answer, reverse=True)) if answer else "None"
     if answer:
         assert sum(answer) == requested_sum
     print("# Answer is:\n{}".format(ans_str))
     if ext_out:
-        print("# Lib calls: {}".format(ssp._lib_calls))
-        print("# Commited shifts: {}".format(ssp._shifts_num))
-        print("# Elapsed time: {}".format(dt.now() - t0))
-        print("# Answer on leaf node: {}".format(ssp._on_leaf))
+        print("# /E: Lib calls: {}".format(ssp._lib_calls))
+        print("# /E: Commited shifts: {}".format(ssp._shifts_num))
+        print("# /E: Elapsed time: {}".format(dt.now() - t0))
+        print("# /E: Answer on leaf node: {}".format(ssp._on_leaf))
+    if t_ans:
+        print("# /A: S1 include answer: {}".format(ssp.ans_incl))
+        print("# /A: S1 not include answer: {}".format(ssp.ans_non_incl))
+
 
 
 if __name__ == "__main__":
     args = parse_args()
     main(args.input, args.requested_sum,
          args.verbose, args.get_density,
-         args.deep, args.naive, 
+         args.deep, args.naive, args.t_ans,
          args.shifts_num, args.ext_out)
