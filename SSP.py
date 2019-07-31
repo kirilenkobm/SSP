@@ -18,14 +18,14 @@ __version__ = 0.1
 UINT64_SIZE = 18446744073709551615
 
 
-class Kirilenko_lib:
+class SSP_lib:
     """Class to solve Subset Sum Problem in natural numbers.
 
     S - input multiset of numbers
     k - number of elements in the set
     X - sum of subset s in S
     """
-    def __init__(self, in_file, req_sum, v=False, d=False, deep=False, naive=False, shifts_lim=0):
+    def __init__(self, in_file, req_sum, v=False, d=False, deep=False, naive=False, shifts_lim=0, ext_v=False):
         """Initiate the class."""
         self.in_file = in_file
         self.X = req_sum
@@ -35,6 +35,7 @@ class Kirilenko_lib:
         self._deep = deep
         self._shifts_lim = shifts_lim
         self._naive = naive
+        self._ext_v = ext_v
         self.__make_input_arr()
         self.f_min = self.S[:]
         self.f_min += self.f_min
@@ -119,13 +120,14 @@ class Kirilenko_lib:
         self.c_d = ctypes.c_bool(self._deep)
         self.lib.solve_SSP.restype = ctypes.POINTER(ctypes.c_uint64)
 
-    def __call_solver_lib(self, arr, X):
+    def __call_solver_lib(self, arr, X, ext_v=False):
         """Call lib with the parameters given."""
         self._lib_calls += 1
         c_arr = (ctypes.c_uint64 * (len(arr) + 1))()
         c_arr[:-1] = arr
         c_arr_size = ctypes.c_uint64(len(arr))
         c_X = ctypes.c_uint64(X)
+        # c_ext_v = ctypes.c_bool(ext_v)
         result = self.lib.solve_SSP(c_arr,
                                     c_arr_size,
                                     c_X,
@@ -150,7 +152,7 @@ class Kirilenko_lib:
             return self.answer
         # try naïve approach from 0
         self.__configure_solver_lib()
-        naive_ans = self.__call_solver_lib(self.S, self.X) if self._naive else None
+        naive_ans = self.__call_solver_lib(self.S, self.X, self._ext_v) if self._naive else None
         self.__v("# Trying naïve approach first...") if self._naive else None
         if naive_ans:
             self.__v("# Naïve approach returned the answer")
@@ -161,13 +163,14 @@ class Kirilenko_lib:
         f_max_acc = accumulate_sum(self.f_max)
         # f_min_acc = accumulate_sum(self.f_min)
         f_max_len = len(f_max_acc)
+        shift_num = self.k
 
-        for shift in range(self.k):
+        for shift in range(shift_num):
             self._shifts_num += 1
             if self._shifts_lim > 0 and shift - 1 >= self._shifts_lim:
                 self.answer = None
                 return self.answer
-            self.__v("# Trying shift {} / {}".format(shift, self.k))
+            self.__v("# Trying shift {} / {}".format(shift, shift_num))
             # try on f_max
             for i, node in enumerate(f_max_acc[::-1]):
                 if node > self.X:
@@ -183,9 +186,13 @@ class Kirilenko_lib:
                 way_count = Counter(way_to_node)
                 s_2_co = self.elems_count - way_count
                 s_2 = sorted(flatten([k for _ in range(v)] for k, v in s_2_co.items() if k < delta))
-                if sum(s_2) < delta:
+                s_2_sum = sum(s_2)
+                if s_2_sum < delta:
                     # unreachable
                     continue
+                elif s_2_sum == delta:
+                    self.answer = s_2 + list(way_to_node)
+                    return self.answer
                 sol = self.__call_solver_lib(s_2, delta)
                 if not sol:
                     continue
@@ -193,6 +200,7 @@ class Kirilenko_lib:
                 return self.answer
             f_max_acc = shift_right(f_max_acc)
             # f_min_acc = shift_right(f_min_acc)
+
 
 def parse_args():
     """Parse and check args."""
@@ -250,8 +258,9 @@ def flatten(lst):
 def main(input_file, requested_sum, v, dens, deep, naive, shifts_lim, ext_out):
     """Entry point."""
     t0 = dt.now()
-    ssp = Kirilenko_lib(input_file, requested_sum, v,
-                        dens, deep, naive, shifts_lim)
+    ssp = SSP_lib(input_file, requested_sum, v,
+                  dens, deep, naive, shifts_lim,
+                  ext_out)
     answer = ssp.solve_ssp()
     ans_str = str(sorted(answer, reverse=True)) if answer else "None"
     if answer:
