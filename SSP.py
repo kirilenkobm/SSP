@@ -9,6 +9,7 @@ from collections import Counter
 from datetime import datetime as dt
 from math import log
 import ctypes
+from src._low_dens import SSP_low_density
 
 __author__ = "Bogdan Kirilenko"
 __email__ = "kirilenkobm@gmail.com"
@@ -110,7 +111,7 @@ class SSP_lib:
         self.ans_incl = 0
         self.ans_non_incl = 0
         if self._t_ans is None:
-            self.answer = set()
+            self.real_answer = set()
             return
         f = open(self._t_ans, "r")
         # read produced by generate_input answer file
@@ -192,11 +193,12 @@ class SSP_lib:
                 return self.answer
             self.__v("# Trying shift {} / {}".format(shift, shift_num))
             # try on f_max
-            for i, node in enumerate(f_min_acc[::-1]):
+            for i, node in enumerate(f_max_acc[::-1]):
                 if node > self.X:
                     continue
                 elif node == self.X:
                     self._on_leaf = True
+                    print("RETURNS WRONG ANSWER!")
                     return self.f_max[shift: shift + ind]
                 ind = f_max_len - i
                 # self.__v("# shift {}/{} index {}".format(shift, self.k, ind), end="\r")
@@ -222,6 +224,9 @@ class SSP_lib:
                     eprint("# /A: Subset contains answer at density {}".format(s_2_d)) \
                         if self._t_ans else None
                     self.ans_incl += 1
+                    ld_solver = SSP_low_density(s_2, delta)
+                    ld_sol = ld_solver.get_answer()
+                # continue
                 sol = self.__call_solver_lib(s_2, delta)
                 if not sol:
                     continue
@@ -311,7 +316,6 @@ def main(input_file, requested_sum, v, dens, deep, naive, t_ans, shifts_lim, ext
     if t_ans:
         print("# /A: S1 include answer: {}".format(ssp.ans_incl))
         print("# /A: S1 not include answer: {}".format(ssp.ans_non_incl))
-
 
 
 if __name__ == "__main__":
