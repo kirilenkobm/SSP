@@ -9,7 +9,6 @@ from collections import Counter
 from datetime import datetime as dt
 from math import log
 import ctypes
-from src._low_dens import SSP_low_density
 
 __author__ = "Bogdan Kirilenko"
 __email__ = "kirilenkobm@gmail.com"
@@ -27,7 +26,7 @@ class SSP_lib:
     X - sum of subset s in S
     """
     def __init__(self, in_file, req_sum, v=False, d=False, deep=False,
-                 naive=False, shifts_lim=0, ext_v=False, t_ans=None):
+                 ext_v=False, t_ans=None):
         """Initiate the class."""
         self.in_file = in_file
         self.X = req_sum
@@ -35,8 +34,6 @@ class SSP_lib:
         self._get_d = d
         self.answer = None
         self._deep = deep
-        self._shifts_lim = shifts_lim
-        self._naive = naive
         self._ext_v = ext_v
         self.__make_input_arr()
         self._t_ans = t_ans
@@ -72,6 +69,7 @@ class SSP_lib:
             sys.exit("Error: in input, numeric values expected.")
         finally:  # Q: will it work after sys.exit()?
             f.close()
+        self.S = numbers
         # check for boundaries
         if any(x < 0 for x in numbers):
             sys.exit("Sorry, but for now works for non-negative"
@@ -85,26 +83,26 @@ class SSP_lib:
         min_elem = numbers[0]
         max_elem = numbers[-1]
 
-        if self._get_d:
+        if self._get_d or self._verbose:
             # we were reqested to print dataset density
             dens = arr_len / log(max_elem, 2)
-            print("# Dataset density is:\n# {}".format(dens))
+            print(f"# Dataset density is:\n# {dens}")
         if tot_sum > UINT64_SIZE:
-            sys.exit("Error: overall input sum should not exceed "
-                     "the uint64_t capacity, got {}".format(tot_sum))
+            sys.exit(f"Error: overall input sum should not exceed "
+                     "the uint64_t capacity, got {tot_sum}")
         elif self.X > tot_sum:
-            sys.exit("Requested sum {} > overall sum of the array {}, "
-                     "abort".format(self.X, tot_sum))
+            sys.exit(f"Requested sum {self.X} > overall sum of the array {tot_sum}, abort")
         elif self.X < min_elem:
-            sys.exit("Requested sum {} < smallest element in the array {}, "
-                     "abort".format(self.X, min_elem))
+            sys.exit(f"Requested sum {self.X} < smallest element in the array {min_elem}, abort")
         elif self.X in numbers:
             print("Requested sum is in S")
             self.answer = [self.X]
             return
-        self.S = numbers
+
         self.k = len(numbers)
-        self.__v("# /V: Input array of size {}".format(self.k))
+        self.__v(f"# /V: Input array of size {self.k}")
+        self.__v(f"# /V: Array sum {tot_sum}")
+        self.__v(f"# /V max_val: {max_elem}, min_val: {min_elem}")
 
     def _trace_answer(self):
         """If set, load real answer."""
@@ -121,7 +119,6 @@ class SSP_lib:
             self.real_answer = set(int(x) for x in line[1:-2].split(", "))
             break
         f.close()
-
 
     def __configure_solver_lib(self):
         """Find the lib and configure it."""
@@ -173,67 +170,9 @@ class SSP_lib:
             return self.answer
         # try naïve approach from 0
         self.__configure_solver_lib()
-        naive_ans = self.__call_solver_lib(self.S, self.X, self._ext_v) if self._naive else None
-        self.__v("# /V: Trying naïve approach first...") if self._naive else None
-        if naive_ans:
-            self.__v("# /V: Naïve approach returned the answer")
-            self.answer = naive_ans
-            return self.answer
-        # ok, try going over the list
-        self.elems_count = Counter(self.S)
-        f_max_acc = accumulate_sum(self.f_max)
-        f_min_acc = accumulate_sum(self.f_min)
-        f_max_len = len(f_max_acc)
-        shift_num = self.k
-
-        for shift in range(shift_num):
-            self._shifts_num += 1
-            if self._shifts_lim > 0 and shift - 1 >= self._shifts_lim:
-                self.answer = None
-                return self.answer
-            self.__v("# Trying shift {} / {}".format(shift, shift_num))
-            # try on f_max
-            for i, node in enumerate(f_max_acc[::-1]):
-                if node > self.X:
-                    continue
-                elif node == self.X:
-                    self._on_leaf = True
-                    print("RETURNS WRONG ANSWER!")
-                    return self.f_max[shift: shift + ind]
-                ind = f_max_len - i
-                # self.__v("# shift {}/{} index {}".format(shift, self.k, ind), end="\r")
-                delta = self.X - node
-                # ways_to_node = self.__retrieve_node(self.leaf[node])
-                way_to_node = self.f_max[shift: shift + ind]
-                way_count = Counter(way_to_node)
-                s_2_co = self.elems_count - way_count
-                s_2 = sorted(flatten([k for _ in range(v)] for k, v in s_2_co.items() if k < delta))
-                s_2_sum = sum(s_2)
-                if s_2_sum < delta:
-                    # unreachable
-                    continue
-                elif s_2_sum == delta:
-                    self.answer = s_2 + list(way_to_node)
-                    return self.answer
-                s_2_d = len(s_2) / log(max(s_2), 2)
-                eprint("# /GD: Subset density: {}".format(s_2_d)) if self._get_d else None
-                s_1_real_ans_ = set(way_to_node).difference(self.real_answer)
-                if s_1_real_ans_:
-                    self.ans_non_incl += 1
-                else:  # S1 entirely consists on the real answer
-                    eprint("# /A: Subset contains answer at density {}".format(s_2_d)) \
-                        if self._t_ans else None
-                    self.ans_incl += 1
-                    ld_solver = SSP_low_density(s_2, delta)
-                    ld_sol = ld_solver.get_answer()
-                # continue
-                sol = self.__call_solver_lib(s_2, delta)
-                if not sol:
-                    continue
-                self.answer = sol + list(way_to_node)
-                return self.answer
-            f_max_acc = shift_right(f_max_acc)
-            f_min_acc = shift_right(f_min_acc)
+        naive_ans = self.__call_solver_lib(self.S, self.X, self._ext_v)
+        self.answer = naive_ans
+        return self.answer
 
 
 def parse_args():
@@ -246,15 +185,11 @@ def parse_args():
                     help="Specify particular size of subset, look only for this")
     app.add_argument("--get_density", "--gd", action="store_true", dest="get_density",
                      help="Compute dataset density")
-    app.add_argument("--shifts_num", "--sn", type=int, default=0,
-                     help="Stop search after N shifts, if 0 - try all.")
     app.add_argument("--deep", "-d", action="store_true", dest="deep",
                      help="Include deep target search, drastically increases "
                           "the runtime")
-    app.add_argument("--naive", "-n", action="store_true", dest="naive",
-                     help="Try to find result without the lead")
     app.add_argument("--verbose", "-v", action="store_true", dest="verbose",
-                     help="Shpw verbose messages.")
+                     help="Show verbose messages.")
     app.add_argument("--ext_out", "-e", action="store_true", dest="ext_out")
     app.add_argument("--t_ans", "-a", default=None, help="If the file with "
                      "real answer given, check how many subsets include it, "
@@ -297,12 +232,11 @@ def eprint(msg, end="\n"):
     sys.stderr.write(msg + end)
 
 
-def main(input_file, requested_sum, v, dens, deep, naive, t_ans, shifts_lim, ext_out):
+def main(input_file, requested_sum, v, dens, deep, t_ans, ext_out):
     """Entry point."""
     t0 = dt.now()
     ssp = SSP_lib(input_file, requested_sum, v,
-                  dens, deep, naive, shifts_lim,
-                  ext_out, t_ans)
+                  dens, deep, ext_out, t_ans)
     answer = ssp.solve_ssp()
     ans_str = str(sorted(answer, reverse=True)) if answer else "None"
     if answer:
@@ -322,5 +256,4 @@ if __name__ == "__main__":
     args = parse_args()
     main(args.input, args.requested_sum,
          args.verbose, args.get_density,
-         args.deep, args.naive, args.t_ans,
-         args.shifts_num, args.ext_out)
+         args.deep, args.t_ans, args.ext_out)
