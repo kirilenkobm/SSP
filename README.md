@@ -1,7 +1,12 @@
 # Subset Sum problem
 
 Each problem requires a solution. And the subset sum problem is not an exception.
-Here, you can find an algorithm that effectively solves this problem in natural numbers.
+Here, you can find an algorithm that effectively solves this problem in natural numbers for density > 1
+Where density is:
+
+```math
+d = n / log2(max(S))
+```
 
 ## A formal definition of the subset sum problem
 
