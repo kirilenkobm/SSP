@@ -5,6 +5,7 @@ CFLAGS = -fPIC -Wall -Wextra -O2 -g
 LDFLAGS = -shared
 RM = rm -f
 TARGET_LIB = bin/SSP_lib.so
+RND_GEN = bin/generate_input
 
 SRCS = src/SSP_lib.c
 OBJS = $(SRCS:.c=.o)
@@ -23,3 +24,9 @@ include $(SRCS:.c=.d)
 .PHONY: clean
 clean:
 	-${RM} ${OBJS} $(SRCS:.c)
+
+.PHONY: rnd
+rnd: $(RND_GEN)
+
+$(RND_GEN): src/generate_input.c
+	$(CC) $(CFLAGS) src/generate_input.c -o $(RND_GEN) $

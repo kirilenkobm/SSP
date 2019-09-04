@@ -83,13 +83,6 @@ The limitations are:
 - Also, the target should not be bigger than he overall sum of input array.
 
 Master script SSP.py and C code don't require any external libraries.
-Libraries required to call "generate_input.py" and "perf_tests.ipynb", are listed in the requirements.txt file.
-
-## Explanation
-
-Algorithm explained in detail at:
-
-[AM ARTICLE COMING SOON]
 
 ## Performance measurements
 
@@ -99,4 +92,4 @@ Complexity in the worst case:
 O(N^5)
 ```
 
-To be done
+TODO: check that it's true
