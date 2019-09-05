@@ -23,6 +23,8 @@ d = n / log2(max(S))
 
 ## Usage
 
+Achtung! Windows support was not properly implemented and tested!
+
 To get started:
 
 ```shell
