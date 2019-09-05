@@ -101,4 +101,16 @@ Complexity in the worst case:
 O(N^5)
 ```
 
-TODO: check that it's true
+Performance tests vere performed with variable array lengths and forming answer subset sizes. Max number was fixed to 10M. Subset sums that form answer were 25, 50 and 75% of overall dataset size.
+
+Overall picture:
+
+![alt text](plots/runtime_1.png "Runtime 1")
+
+Shows that in general program works very fast, and in some minor cases the runtime is almost awful.
+
+Zoomed in:
+
+![alt text](plots/runtime_2.png "Runtime 2")
+
+Shows that runtime grows very slow in average.
