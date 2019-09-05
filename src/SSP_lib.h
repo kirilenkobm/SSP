@@ -37,7 +37,7 @@ void free_all();
 void verbose(const char * restrict format, ...);
 
 // keyboard interrupt handler
-void sigint_handler(int sig_num);
+// void sigint_handler(int sig_num);
 
 // create accumulated sum array
 uint64_t *accumulate_sum(uint64_t *arr, uint64_t arr_size);
