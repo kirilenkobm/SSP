@@ -62,7 +62,8 @@ class SSP_lib:
         in_is_stdin_stream = self.in_file == "stdin"
         f = open(self.in_file) if not in_is_stdin_stream else sys.stdin
         try:
-            numbers = sorted([int(x.rstrip()) for x in f.readlines()])
+            numbers = sorted([int(x.rstrip()) for x in f.readlines()
+                              if not x.startswith("#")])
         except ValueError:  # there was something non-numeric!
             sys.exit("Error: in input, numeric values expected.")
         finally:  # Q: will it work after sys.exit()?
@@ -180,15 +181,6 @@ def parse_args():
     if args.requested_sum < 0:
         sys.exit("Requested sum cannot be negative")
     return args
-
-
-def shift_right(arr):
-    """Shift accumulated sum."""
-    start = arr[0]
-    end = arr[-1]
-    ans = [e - start for e in arr[1:]]
-    ans.append(end)
-    return ans
 
 
 def accumulate_sum(lst):

@@ -31,6 +31,7 @@ typedef struct
     uint64_t num_num;
     uint64_t max_num;
     uint64_t min_num;
+    uint64_t to_ans;
     char *output_file;
 } Input_data;
 
@@ -40,10 +41,11 @@ struct stat st = {0};
 // show help and exit
 void _show_usage_and_quit(char * executable)
 {
-    fprintf(stderr, "Usage: %s [num_num] [max_num] [min_num] [output_file]\n", executable);
+    fprintf(stderr, "Usage: %s [num_num] [max_num] [min_num] [to_ans] [output_file]\n", executable);
     fprintf(stderr, "[num_num] - set S size\n");
     fprintf(stderr, "[max_num] - max number in the dataset\n");
     fprintf(stderr, "[min_num] - min number in the dataset\n");
+    fprintf(stderr, "[to_ans] - number of numbers to create the answer\n");
     fprintf(stderr, "[output_file] - where to save, a file or stdout\n");
     exit(1);
 }
@@ -55,14 +57,15 @@ void __read_input(Input_data *input_data, char **argv)
     input_data->num_num = (uint16_t)strtoul(argv[1], 0L, 10);
     input_data->max_num = (uint16_t)strtoul(argv[2], 0L, 10);
     input_data->min_num = (uint16_t)strtoul(argv[3], 0L, 10);
+    input_data->to_ans = (uint16_t)strtoul(argv[4], 0L, 10);
     input_data->output_file = (char*)malloc(MAXCHAR * sizeof(char));
-    strcpy(input_data->output_file, argv[4]);
+    strcpy(input_data->output_file, argv[5]);
 }
 
 // enrty point
 int main(int argc, char **argv)
 {
-    if (argc != 5){_show_usage_and_quit(argv[0]);}
+    if (argc != 6){_show_usage_and_quit(argv[0]);}
     srand((uint32_t)time(NULL) + (uint32_t)**main);
     Input_data input_data;
     __read_input(&input_data, argv);
@@ -72,13 +75,20 @@ int main(int argc, char **argv)
         arr[i] = (rand() % (input_data.max_num - input_data.min_num + 1)) + input_data.min_num;
     }
     // if we need to stdout -> just print it
+    uint64_t answer = 0;
+    if (input_data.to_ans != 0){
+        for (uint64_t i = 0; i < input_data.to_ans; ++i) {answer += arr[i];}
+    }
+
     if (strcmp(input_data.output_file, "stdout") == 0){
+        printf("# The answer is %llu\n", answer);
         for (uint64_t i = 0; i < input_data.num_num; ++i){printf("%llu\n", arr[i]);}
         free(arr);
         return 0;
     }
     FILE *f;
     f = fopen(input_data.output_file, "w");
+    fprintf(f, "# The answer is %llu\n", answer);
     for (uint64_t i = 0; i < input_data.num_num; ++i){
         fprintf(f, "%llu\n", arr[i]);
     }
