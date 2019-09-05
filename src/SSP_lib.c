@@ -335,6 +335,7 @@ uint64_t *solve_SSP(uint64_t *in_arr, uint64_t _arr_size,
     signal(SIGINT, sigint_handler);
     verbose("Entered shared library.\n");
     uint64_t arr_size = _arr_size;
+    v = _v;
     size_t f_max_min_size = sizeof(uint64_t) * (arr_size + CHUNK);
     uint64_t *dummy = (uint64_t*)calloc(CHUNK, sizeof(uint64_t));
     // the numbers were actually pre-sorted, so f_min is defined just for explicity
