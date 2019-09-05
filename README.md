@@ -95,13 +95,16 @@ Master script SSP.py and C code don't require any external libraries.
 
 ## Performance measurements
 
-Complexity in the worst case:
+Algorithm complexity in the __worst__ case:
 
 ```math
 O(N^5)
 ```
 
-Performance tests vere performed with variable array lengths and forming answer subset sizes. Max number was fixed to 10M. Subset sums that form answer were 25, 50 and 75% of overall dataset size.
+Performance tests vere performed with variable array lengths and forming answer subset sizes.
+Max number was fixed to 10M. Subset sums that form answer were 25, 50 and 75% of overall dataset size.
+Density varied from 6.32 to 632.38.
+In 100% cases the program found a subset with requested sum.
 
 Overall picture:
 
