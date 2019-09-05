@@ -26,7 +26,7 @@ class SSP_lib:
     X - sum of subset s in S
     """
     def __init__(self, in_file, req_sum, v=False, d=False, deep=False,
-                 ext_v=False, t_ans=None):
+                 ext_v=False):
         """Initiate the class."""
         self.in_file = in_file
         self.X = req_sum
@@ -36,8 +36,6 @@ class SSP_lib:
         self._deep = deep
         self._ext_v = ext_v
         self.__make_input_arr()
-        self._t_ans = t_ans
-        self._trace_answer()
         self.f_min = self.S[:]
         self.f_min += self.f_min
         self.f_max = self.S[::-1]
@@ -103,22 +101,6 @@ class SSP_lib:
         self.__v(f"# /V: Input array of size {self.k}")
         self.__v(f"# /V: Array sum {tot_sum}")
         self.__v(f"# /V max_val: {max_elem}, min_val: {min_elem}")
-
-    def _trace_answer(self):
-        """If set, load real answer."""
-        self.ans_incl = 0
-        self.ans_non_incl = 0
-        if self._t_ans is None:
-            self.real_answer = set()
-            return
-        f = open(self._t_ans, "r")
-        # read produced by generate_input answer file
-        for line in f:
-            if not line.startswith("["):
-                continue
-            self.real_answer = set(int(x) for x in line[1:-2].split(", "))
-            break
-        f.close()
 
     def __configure_solver_lib(self):
         """Find the lib and configure it."""
@@ -191,9 +173,6 @@ def parse_args():
     app.add_argument("--verbose", "-v", action="store_true", dest="verbose",
                      help="Show verbose messages.")
     app.add_argument("--ext_out", "-e", action="store_true", dest="ext_out")
-    app.add_argument("--t_ans", "-a", default=None, help="If the file with "
-                     "real answer given, check how many subsets include it, "
-                     "compatible with generate_input.py output.")
     if len(sys.argv) < 3:
         app.print_help()
         sys.exit()
@@ -232,11 +211,11 @@ def eprint(msg, end="\n"):
     sys.stderr.write(msg + end)
 
 
-def main(input_file, requested_sum, v, dens, deep, t_ans, ext_out):
+def main(input_file, requested_sum, v, dens, deep, ext_out):
     """Entry point."""
     t0 = dt.now()
     ssp = SSP_lib(input_file, requested_sum, v,
-                  dens, deep, ext_out, t_ans)
+                  dens, deep, ext_out)
     answer = ssp.solve_ssp()
     ans_str = str(sorted(answer, reverse=True)) if answer else "None"
     if answer:
@@ -247,13 +226,10 @@ def main(input_file, requested_sum, v, dens, deep, t_ans, ext_out):
         print("# /E: Commited shifts: {}".format(ssp._shifts_num))
         print("# /E: Elapsed time: {}".format(dt.now() - t0))
         print("# /E: Answer on leaf node: {}".format(ssp._on_leaf))
-    if t_ans:
-        print("# /A: S1 include answer: {}".format(ssp.ans_incl))
-        print("# /A: S1 not include answer: {}".format(ssp.ans_non_incl))
 
 
 if __name__ == "__main__":
     args = parse_args()
     main(args.input, args.requested_sum,
          args.verbose, args.get_density,
-         args.deep, args.t_ans, args.ext_out)
+         args.deep, args.ext_out)
