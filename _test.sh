@@ -16,8 +16,8 @@ TEST_3=test_input/3.txt
 TEST_4=test_input/4.txt
 
 SSP=./SSP.py
-echo "### TEST_1 10"
-echo "### Must return [8, 4]"
+echo "### TEST_1"
+echo "### Must return [8, 4] or equivalent"
 $SSP $TEST_1 12
 if [[ $? -ne 0 ]]; then
     echo "Test 1 failed"
