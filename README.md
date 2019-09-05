@@ -98,7 +98,7 @@ Master script SSP.py and C code don't require any external libraries.
 Algorithm complexity in the __worst__ case:
 
 ```math
-O(N^5)
+O(N^3)
 ```
 
 Performance tests vere performed with variable array lengths and forming answer subset sizes.
@@ -118,3 +118,9 @@ Zoomed in:
 ![alt text](plots/runtime_2.png "Runtime 2")
 
 Shows that runtime grows very slow in average.
+
+For this plot only the cases that took > 0.2 sec vere selected:
+
+![alt text](plots/runtime_3.png "Runtime 3")
+
+Shows that even in the worst case the runtime grows not faster than N^3 / C.
