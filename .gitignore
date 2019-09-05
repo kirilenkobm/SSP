@@ -11,8 +11,7 @@
 bin/generate_input
 
 # datasets
-performance/answers
-performance/inputs
+performance/test*
 
 # python stuff
 _backup/*
