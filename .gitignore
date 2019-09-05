@@ -1,14 +1,22 @@
+# IDE related
 .vscode/
 .idea/
+.DS_Store
+
+# compilation stuff
+*dSYM/
 *.o
 *.so
-__pycache__/
 *.d
-__py_implementation.py
-.ipynb_checkpoints/
-.Rhistory
+bin/generate_input
+
+# datasets
 performance/answers
 performance/inputs
+
+# python stuff
 _backup/*
 _previous/*
-.DS_Store
+__pycache__/
+__py_implementation.py
+.ipynb_checkpoints/
